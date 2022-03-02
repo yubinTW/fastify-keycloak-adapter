@@ -1,0 +1,48 @@
+{
+  "name": "fastify-keycloak-adapter",
+  "author": "Yubin, Hsu",
+  "version": "0.0.6",
+  "main": "dist/keycloak",
+  "types": "dist/keycloak",
+  "keywords": [
+    "fastify",
+    "keycloak",
+    "plugin"
+  ],
+  "files": [
+    "dist"
+  ],
+  "description": "A fastify plugin for Keycloak",
+  "license": "MIT",
+  "homepage": "https://github.com/yubinTW/fastify-keycloak-adapter",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yubinTW/fastify-keycloak-adapter"
+  },
+  "bugs": {
+    "url": "https://github.com/yubinTW/fastify-keycloak-adapter/issues"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "jest --coverage --runInBand --detectOpenHandles",
+    "fix-prettier": "prettier --write \"./{src,test}/**/*.ts\""
+  },
+  "dependencies": {
+    "@fastify/session": "^6.4.0",
+    "axios": "^0.26.0",
+    "fastify": "^3.27.2",
+    "fastify-cookie": "^5.6.0",
+    "fastify-jwt": "^4.1.3",
+    "fastify-plugin": "^3.0.1",
+    "grant": "^5.4.20"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.4.1",
+    "@types/node": "^16.11.26",
+    "fp-ts": "^2.11.8",
+    "jest": "^27.5.1",
+    "prettier": "^2.5.1",
+    "ts-jest": "^27.1.3",
+    "typescript": "^4.6.2"
+  }
+}
