@@ -4,6 +4,7 @@ import session from '@fastify/session'
 import grant, { GrantResponse, GrantSession } from 'grant'
 import jwt from 'fastify-jwt'
 import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify'
+import * as B from 'fp-ts/boolean'
 import * as E from 'fp-ts/Either'
 import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/function'
@@ -80,24 +81,36 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
   })
 
   function getGrantFromSession(request: FastifyRequest): E.Either<Error, GrantSession> {
-    if (request.session.grant) {
-      return E.right(request.session.grant)
-    }
-    return E.left(new Error(`grant not found in session`))
+    return pipe(
+      request.session.grant,
+      O.fromNullable,
+      O.match(
+        () => E.left(new Error(`grant not found in session`)),
+        () => E.right(request.session.grant)
+      )
+    )
   }
 
   function getResponseFromGrant(grant: GrantSession): E.Either<Error, GrantResponse> {
-    if (grant.response) {
-      return E.right(grant.response)
-    }
-    return E.left(new Error(`response not found in grant`))
+    return pipe(
+      grant.response,
+      O.fromNullable,
+      O.match(
+        () => E.left(new Error(`response not found in grant`)),
+        (response) => E.right(response)
+      )
+    )
   }
 
   function getIdtokenFromResponse(response: GrantResponse): E.Either<Error, string> {
-    if (response.id_token) {
-      return E.right(response.id_token)
-    }
-    return E.left(new Error(`id_token not found in response with response: ${response}`))
+    return pipe(
+      response.id_token,
+      O.fromNullable,
+      O.match(
+        () => E.left(new Error(`id_token not found in response with response: ${response}`)),
+        (id_token) => E.right(id_token)
+      )
+    )
   }
 
   function verifyIdtoken(idToken: string): E.Either<Error, string> {
@@ -134,21 +147,28 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
   })
 
   fastify.addHook('preValidation', (request: FastifyRequest, reply: FastifyReply, done) => {
-    if (!isGrantRoute(request)) {
-      pipe(
-        authentication(request),
-        E.fold(
-          (e) => {
-            request.log.debug(`${e}`)
-            reply.redirect(`${opts.appOrigin}/connect/keycloak`)
-          },
-          (decodedJson) => {
-            request.session.user = userPayloadMapper(decodedJson)
-            request.log.debug(`${inspect(request.session.user, false, null)}`)
-          }
-        )
+    pipe(
+      request,
+      isGrantRoute,
+      B.match(
+        () => {
+          pipe(
+            authentication(request),
+            E.fold(
+              (e) => {
+                request.log.debug(`${e}`)
+                reply.redirect(`${opts.appOrigin}/connect/keycloak`)
+              },
+              (decodedJson) => {
+                request.session.user = userPayloadMapper(decodedJson)
+                request.log.debug(`${inspect(request.session.user, false, null)}`)
+              }
+            )
+          )
+        },
+        () => {}
       )
-    }
+    )
     done()
   })
 
@@ -170,7 +190,6 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
         }
       )
     )
-    
   })
 
   fastify.log.info(`Keycloak registered successfully!`)
