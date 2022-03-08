@@ -137,6 +137,21 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     )
   }
 
+  const getBearerTokenFromRequest = (request: FastifyRequest): O.Option<string> => {
+    return pipe(
+      request.headers.authorization,
+      O.fromNullable,
+      O.map((str) => str.substring(7))
+    )
+  }
+
+  const verifyJwtToken = (token: string): E.Either<Error, string> => {
+    return E.tryCatch(
+      () => fastify.jwt.verify(token),
+      (e) => new Error(`Failed to verify token: ${e}`)
+    )
+  }
+
   const grantRoutes = ['/connect/:provider', '/connect/:provider/:override']
 
   const isGrantRoute = (request: FastifyRequest) => grantRoutes.includes(request.routerPath)
@@ -153,15 +168,40 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
       B.match(
         () => {
           pipe(
-            authentication(request),
-            E.fold(
-              (e) => {
-                request.log.debug(`${e}`)
-                reply.redirect(`${opts.appOrigin}/connect/keycloak`)
+            request,
+            getBearerTokenFromRequest,
+            O.match(
+              () => {
+                pipe(
+                  authentication(request),
+                  E.fold(
+                    (e) => {
+                      request.log.debug(`${e}`)
+                      reply.redirect(`${opts.appOrigin}/connect/keycloak`)
+                    },
+                    (decodedJson) => {
+                      request.session.user = userPayloadMapper(decodedJson)
+                      request.log.debug(`${inspect(request.session.user, false, null)}`)
+                    }
+                  )
+                )
               },
-              (decodedJson) => {
-                request.session.user = userPayloadMapper(decodedJson)
-                request.log.debug(`${inspect(request.session.user, false, null)}`)
+              (bearerToken) => {
+                pipe(
+                  bearerToken,
+                  verifyJwtToken,
+                  E.chain(decodedTokenToJson),
+                  E.fold(
+                    (e) => {
+                      request.log.debug(`${e}`)
+                      reply.redirect(process.env.APP_ORIGIN + '/connect/keycloak')
+                    },
+                    (decodedJson) => {
+                      request.session.user = userPayloadMapper(decodedJson)
+                      request.log.debug(`${inspect(request.session.user, false, null)}`)
+                    }
+                  )
+                )
               }
             )
           )
