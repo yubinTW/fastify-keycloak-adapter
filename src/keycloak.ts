@@ -35,7 +35,7 @@ export type KeycloakOptions = {
   keycloakSubdomain?: string
   clientId?: string
   clientSecret?: string
-  logoutEndPoint?: string
+  logoutEndpoint?: string
 }
 
 export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOptions) => {
@@ -288,9 +288,9 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     })
   }
 
-  const logoutEndPoint = opts.logoutEndPoint ?? '/logout'
+  const logoutEndpoint = opts.logoutEndpoint ?? '/logout'
 
-  fastify.get(logoutEndPoint, async (request, reply) => {
+  fastify.get(logoutEndpoint, async (request, reply) => {
     pipe(
       request.session.user,
       O.fromNullable,
