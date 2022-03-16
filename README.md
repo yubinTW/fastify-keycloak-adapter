@@ -1,5 +1,15 @@
 # Fastify-Keycloak-Adapter
 
+## Install
+
+https://www.npmjs.com/package/fastify-keycloak-adapter
+
+```
+npm i fastify-keycloak-adapter
+```
+
+## Usage
+
 ```typescript
 import keycloak, { KeycloakOptions } from 'fastify-keycloak-adapter'
 
