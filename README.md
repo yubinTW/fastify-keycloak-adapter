@@ -22,3 +22,27 @@ const opts: KeycloakOptions = {
 
 fastify.register(keycloak, opts)
 ```
+
+## Configuration
+
+- `appOrigin` app url, used for redirect to the app when user login successfully (required)
+
+- `keycloakSubdomain` keycloak subdomain, endpoint of a realm resource (required)
+
+- `clientId` client id (required)
+
+- `clientSecret` client secret (required)
+
+- `logoutEndpoint` route path of doing logout (optional, defaults to `/logout`)
+
+## Configuration example
+
+```
+const opts: KeycloakOptions = {
+  appOrigin: 'http://localhost:8888',
+  keycloakSubdomain: 'keycloak.mycompany.com/auth/realms/myrealm',
+  clientId: 'myclient01',
+  clientSecret: 'myClientSecret',
+  logoutEndpoint: '/logout'
+}
+```
