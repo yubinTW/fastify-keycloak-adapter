@@ -39,7 +39,7 @@ fastify.register(keycloak, opts)
 
 ## Configuration example
 
-```
+```typescript
 const opts: KeycloakOptions = {
   appOrigin: 'http://localhost:8888',
   keycloakSubdomain: 'keycloak.mycompany.com/auth/realms/myrealm',
