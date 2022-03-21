@@ -11,6 +11,7 @@ import * as TE from 'fp-ts/TaskEither'
 import { pipe } from 'fp-ts/function'
 import { inspect } from 'util'
 import axios from 'axios'
+import wcmatch from 'wildcard-match'
 
 declare module 'fastify' {
   interface Session {
@@ -36,6 +37,7 @@ export type KeycloakOptions = {
   clientId?: string
   clientSecret?: string
   logoutEndpoint?: string
+  excludedPatterns?: Array<string>
 }
 
 export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOptions) => {
@@ -84,7 +86,8 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     keycloakConfiguration,
     E.match(
       (error) => {
-        fastify.log.error(`Failed to get openid-configuration: ${error}`)
+        fastify.log.fatal(`Failed to get openid-configuration: ${error}`)
+        throw new Error(`Failed to get openid-configuration: ${error}`)
       },
       (config) => {
         registerDependentPlugin(config)
@@ -111,7 +114,8 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     secretPublicKey,
     E.match(
       (e) => {
-        fastify.log.error(`Failed to get public key: ${e}`)
+        fastify.log.fatal(`Failed to get public key: ${e}`)
+        throw new Error(`Failed to get public key: ${e}`)
       },
       (publicKey) => {
         fastify.register(jwt, {
@@ -242,26 +246,51 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     )
   }
 
+  const matchers = pipe(
+    opts.excludedPatterns?.map((pattern) => wcmatch(pattern)),
+    O.fromNullable
+  )
+
+  function filterExcludedPattern(request: FastifyRequest) {
+    return pipe(
+      matchers,
+      O.map((matchers) => matchers.filter((matcher) => matcher(request.url))),
+      O.map((matchers) => matchers.length > 0),
+      O.match(
+        () => O.of(request),
+        (b) =>
+          pipe(
+            b,
+            B.match(
+              () => O.of(request),
+              () => O.none
+            )
+          )
+      )
+    )
+  }
+
+  function filterGrantRoute(request: FastifyRequest) {
+    return pipe(
+      request,
+      O.fromPredicate((request) => !isGrantRoute(request))
+    )
+  }
+
   fastify.addHook('preValidation', (request: FastifyRequest, reply: FastifyReply, done) => {
     pipe(
       request,
-      isGrantRoute,
-      B.match(
-        () => {
-          pipe(
-            request,
-            getBearerTokenFromRequest,
-            O.match(
-              () => {
-                authenticationByGrant(request, reply)
-              },
-              (bearerToken) => {
-                authenticationByToken(request, reply, bearerToken)
-              }
-            )
+      filterGrantRoute,
+      O.chain(filterExcludedPattern),
+      O.map((request) =>
+        pipe(
+          request,
+          getBearerTokenFromRequest,
+          O.match(
+            () => authenticationByGrant(request, reply),
+            (bearerToken) => authenticationByToken(request, reply, bearerToken)
           )
-        },
-        () => {}
+        )
       )
     )
     done()

@@ -35,6 +35,8 @@ fastify.register(keycloak, opts)
 
 - `logoutEndpoint` route path of doing logout (optional, defaults to `/logout`)
 
+- `excludedPatterns` string array for non-authorized urls (optional, support  `?`, `*` and `**` wildcards)
+
 ## Configuration example
 
 ```
@@ -43,6 +45,10 @@ const opts: KeycloakOptions = {
   keycloakSubdomain: 'keycloak.mycompany.com/auth/realms/myrealm',
   clientId: 'myclient01',
   clientSecret: 'myClientSecret',
-  logoutEndpoint: '/logout'
+  logoutEndpoint: '/logout',
+  excludedPatterns: [
+    '/metrics',
+    '/api/todos/**'
+  ]
 }
 ```
