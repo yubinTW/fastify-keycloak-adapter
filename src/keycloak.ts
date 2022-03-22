@@ -236,7 +236,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
       E.fold(
         (e) => {
           request.log.debug(`${e}`)
-          reply.redirect(process.env.APP_ORIGIN + '/connect/keycloak')
+          reply.status(401).send(`Unauthorized`)
         },
         (decodedJson) => {
           request.session.user = userPayloadMapper(decodedJson)
