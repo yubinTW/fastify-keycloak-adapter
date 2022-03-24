@@ -29,6 +29,8 @@ fastify.register(keycloak, opts)
 
 - `keycloakSubdomain` keycloak subdomain, endpoint of a realm resource (required)
 
+- `useHttps` set true if keycloak server uses `https` (optional, defaults to `false`)
+
 - `clientId` client id (required)
 
 - `clientSecret` client secret (required)
@@ -43,6 +45,7 @@ fastify.register(keycloak, opts)
 const opts: KeycloakOptions = {
   appOrigin: 'http://localhost:8888',
   keycloakSubdomain: 'keycloak.mycompany.com/auth/realms/myrealm',
+  useHttps: false,
   clientId: 'myclient01',
   clientSecret: 'myClientSecret',
   logoutEndpoint: '/logout',

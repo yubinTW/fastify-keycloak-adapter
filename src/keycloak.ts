@@ -34,6 +34,7 @@ type RealmResponse = {
 export type KeycloakOptions = {
   appOrigin?: string
   keycloakSubdomain?: string
+  useHttps?: boolean
   clientId?: string
   clientSecret?: string
   logoutEndpoint?: string
@@ -48,8 +49,24 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     )
   }
 
+  const protopol = pipe(
+    opts.useHttps,
+    O.fromNullable,
+    O.match(
+      () => `http://`,
+      (useHttps) =>
+        pipe(
+          useHttps,
+          B.match(
+            () => `http://`,
+            () => `https://`
+          )
+        )
+    )
+  )
+
   const keycloakConfiguration = await pipe(
-    `http://${opts.keycloakSubdomain}/.well-known/openid-configuration`,
+    `${protopol}${opts.keycloakSubdomain}/.well-known/openid-configuration`,
     getWellKnownConfiguration,
     TE.map((response) => response.data)
   )()
@@ -103,7 +120,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
   }
 
   const secretPublicKey = await pipe(
-    `http://${opts.keycloakSubdomain}`,
+    `${protopol}${opts.keycloakSubdomain}`,
     getRealmResponse,
     TE.map((response) => response.data),
     TE.map((realmResponse) => realmResponse.public_key),
