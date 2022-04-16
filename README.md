@@ -55,3 +55,14 @@ const opts: KeycloakOptions = {
   ]
 }
 ```
+
+# Get login user
+
+use `session.user`
+
+```typescript
+fastify.get('/me', async (request, reply) => {
+    const user = request.session.user
+    return reply.status(200).send({ user })
+})
+```
