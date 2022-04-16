@@ -11,7 +11,10 @@ npm i fastify-keycloak-adapter
 ## Usage
 
 ```typescript
+import fastify from "fastify"
 import keycloak, { KeycloakOptions } from 'fastify-keycloak-adapter'
+
+const server = fastify()
 
 const opts: KeycloakOptions = {
   appOrigin: process.env.APP_ORIGIN,
@@ -20,7 +23,7 @@ const opts: KeycloakOptions = {
   clientSecret: process.env.KEYCLOAK_CLIENT_SECRET
 }
 
-fastify.register(keycloak, opts)
+server.register(keycloak, opts)
 ```
 
 ## Configuration
@@ -56,12 +59,12 @@ const opts: KeycloakOptions = {
 }
 ```
 
-# Get login user
+## Get login user
 
-use `session.user`
+use `request.session.user`
 
 ```typescript
-fastify.get('/me', async (request, reply) => {
+server.get('/me', async (request, reply) => {
     const user = request.session.user
     return reply.status(200).send({ user })
 })
