@@ -1,5 +1,5 @@
 import fastifyPlugin from 'fastify-plugin'
-import cookie from 'fastify-cookie'
+import cookie from '@fastify/cookie'
 import session from '@fastify/session'
 import grant, { GrantResponse, GrantSession } from 'grant'
 import jwt from 'fastify-jwt'
