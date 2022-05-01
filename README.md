@@ -41,10 +41,16 @@ server.register(keycloak, opts)
 - `logoutEndpoint` route path of doing logout (optional, defaults to `/logout`)
 
 - `excludedPatterns` string array for non-authorized urls (optional, support  `?`, `*` and `**` wildcards)
+- `userPayloadMapper` defined the fields of `fastify.session.user` (optional)
 
 ## Configuration example
 
 ```typescript
+import keycloak, { KeycloakOptions, UserInfo } from 'fastify-keycloak-adapter'
+import fastify, { FastifyInstance } from 'fastify'
+
+const server: FastifyInstance = fastify()
+
 const opts: KeycloakOptions = {
   appOrigin: 'http://localhost:8888',
   keycloakSubdomain: 'keycloak.mycompany.com/auth/realms/myrealm',
@@ -57,6 +63,26 @@ const opts: KeycloakOptions = {
     '/api/todos/**'
   ]
 }
+
+server.register(keycloak, opts)
+```
+
+## Set userPayloadMapper
+
+defined the fields of `fastify.session.user`, you can set value from `UserInfo`
+
+```typescript
+import { KeycloakOptions, UserInfo } from 'fastify-keycloak-adapter'
+
+const userPayloadMapper = (userPayload: UserInfo) => ({
+    account: userPayload.preferred_username,
+    name: userPayload.name
+})
+
+const opts: KeycloakOptions = {
+  // ...
+  userPayloadMapper: userPayloadMapper
+}
 ```
 
 ## Get login user
@@ -64,7 +90,7 @@ const opts: KeycloakOptions = {
 use `request.session.user`
 
 ```typescript
-server.get('/me', async (request, reply) => {
+server.get('/users/me', async (request, reply) => {
     const user = request.session.user
     return reply.status(200).send({ user })
 })
