@@ -31,6 +31,14 @@ type RealmResponse = {
   public_key: string
 }
 
+export type UserInfo = {
+  email_verified: boolean
+  name: string
+  preferred_username: string
+  given_name: string
+  family_name: string
+}
+
 export type KeycloakOptions = {
   appOrigin?: string
   keycloakSubdomain?: string
@@ -39,6 +47,7 @@ export type KeycloakOptions = {
   clientSecret?: string
   logoutEndpoint?: string
   excludedPatterns?: Array<string>
+  userPayloadMapper?: (userPayload: UserInfo) => {}
 }
 
 export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOptions) => {
@@ -224,10 +233,17 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     return grantRoutes.includes(request.routerPath)
   }
 
-  const userPayloadMapper = (userPayload: any) => ({
-    account: userPayload.preferred_username,
-    name: userPayload.name
-  })
+  const userPayloadMapper = pipe(
+    opts.userPayloadMapper,
+    O.fromNullable,
+    O.match(
+      () => (userPayload: UserInfo) => ({
+        account: userPayload.preferred_username,
+        name: userPayload.name
+      }),
+      (a) => a
+    )
+  )
 
   function authenticationByGrant(request: FastifyRequest, reply: FastifyReply) {
     pipe(
