@@ -20,7 +20,7 @@ declare module 'fastify' {
   }
 }
 
-type WellWknownConfiguration = {
+type WellKnownConfiguration = {
   authorization_endpoint: string
   token_endpoint: string
   end_session_endpoint: string
@@ -53,12 +53,12 @@ export type KeycloakOptions = {
 export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOptions) => {
   function getWellKnownConfiguration(url: string) {
     return TE.tryCatch(
-      () => axios.get<WellWknownConfiguration>(url),
+      () => axios.get<WellKnownConfiguration>(url),
       (e) => new Error(`Failed to get openid configuration: ${e}`)
     )
   }
 
-  const protopol = pipe(
+  const protocol = pipe(
     opts.useHttps,
     O.fromNullable,
     O.match(
@@ -75,12 +75,12 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
   )
 
   const keycloakConfiguration = await pipe(
-    `${protopol}${opts.keycloakSubdomain}/.well-known/openid-configuration`,
+    `${protocol}${opts.keycloakSubdomain}/.well-known/openid-configuration`,
     getWellKnownConfiguration,
     TE.map((response) => response.data)
   )()
 
-  function registerDependentPlugin(config: WellWknownConfiguration) {
+  function registerDependentPlugin(config: WellKnownConfiguration) {
     fastify.register(cookie)
 
     fastify.register(session, {
@@ -129,7 +129,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
   }
 
   const secretPublicKey = await pipe(
-    `${protopol}${opts.keycloakSubdomain}`,
+    `${protocol}${opts.keycloakSubdomain}`,
     getRealmResponse,
     TE.map((response) => response.data),
     TE.map((realmResponse) => realmResponse.public_key),
