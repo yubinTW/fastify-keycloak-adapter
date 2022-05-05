@@ -330,7 +330,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
   })
 
   function logout(request: FastifyRequest, reply: FastifyReply) {
-    request.destroySession((error) => {
+    request.session.destroy((error) => {
       pipe(
         error,
         O.fromNullable,
