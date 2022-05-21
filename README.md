@@ -1,5 +1,7 @@
 # Fastify-Keycloak-Adapter
 
+a keycloak adapter for Fastify app
+
 ## Install
 
 https://www.npmjs.com/package/fastify-keycloak-adapter
@@ -11,7 +13,7 @@ npm i fastify-keycloak-adapter
 ## Usage
 
 ```typescript
-import fastify from "fastify"
+import fastify from 'fastify'
 import keycloak, { KeycloakOptions } from 'fastify-keycloak-adapter'
 
 const server = fastify()
