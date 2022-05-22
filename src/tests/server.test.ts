@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { FastifyInstance } from 'fastify'
 import { KeycloakContainer, StartedKeycloakContainer } from 'testcontainers-keycloak'
 import { KeycloakOptions } from '../keycloak'

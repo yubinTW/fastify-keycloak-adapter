@@ -1,7 +1,7 @@
 {
   "name": "fastify-keycloak-adapter",
   "author": "Yubin, Hsu",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "main": "dist/keycloak",
   "types": "dist/keycloak",
   "keywords": [
@@ -25,7 +25,7 @@
   "scripts": {
     "build": "tsc",
     "test": "jest --coverage --runInBand --detectOpenHandles",
-    "fix-prettier": "prettier --write \"./{src,test}/**/*.ts\""
+    "fix-prettier": "prettier --write \"./src/**/*.ts\""
   },
   "dependencies": {
     "@fastify/cookie": "^6.0.0",
