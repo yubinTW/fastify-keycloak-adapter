@@ -40,6 +40,8 @@ server.register(keycloak, opts)
 
 - `clientSecret` client secret (required)
 
+- `scope` client scope of keycloak (optional, string[], defaults to `['openid']`)
+
 - `logoutEndpoint` route path of doing logout (optional, defaults to `/logout`)
 
 - `excludedPatterns` string array for non-authorized urls (optional, support  `?`, `*` and `**` wildcards)

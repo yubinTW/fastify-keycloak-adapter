@@ -47,10 +47,12 @@ export type KeycloakOptions = {
   clientSecret?: string
   logoutEndpoint?: string
   excludedPatterns?: Array<string>
+  scope?: Array<string>
   userPayloadMapper?: (userPayload: UserInfo) => {}
 }
 
 export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOptions) => {
+  console.log(`opts = ${inspect(opts, false, null)}`)
   function getWellKnownConfiguration(url: string) {
     return TE.tryCatch(
       () => axios.get<WellKnownConfiguration>(url),
@@ -101,7 +103,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
           authorize_url: config.authorization_endpoint,
           access_url: config.token_endpoint,
           callback: '/',
-          scope: ['openid'],
+          scope: opts.scope ?? ['openid'],
           nonce: true
         }
       })
