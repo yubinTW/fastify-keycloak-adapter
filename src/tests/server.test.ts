@@ -30,7 +30,6 @@ describe('server with keycloak testing', () => {
     const keycloakOptions: KeycloakOptions = {
       appOrigin: 'http://localhost:8888',
       keycloakSubdomain: `${keycloak.getHost()}:${keycloak.getMappedPort(8080)}/auth/realms/demo`,
-      useHttps: false,
       clientId: 'client01',
       clientSecret: 'client01secret'
     }

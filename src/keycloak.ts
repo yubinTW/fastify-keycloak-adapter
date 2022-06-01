@@ -40,11 +40,11 @@ export type UserInfo = {
 }
 
 export type KeycloakOptions = {
-  appOrigin?: string
-  keycloakSubdomain?: string
+  appOrigin: string
+  keycloakSubdomain: string
+  clientId: string
+  clientSecret: string
   useHttps?: boolean
-  clientId?: string
-  clientSecret?: string
   logoutEndpoint?: string
   excludedPatterns?: Array<string>
   scope?: Array<string>
@@ -52,7 +52,6 @@ export type KeycloakOptions = {
 }
 
 export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOptions) => {
-  console.log(`opts = ${inspect(opts, false, null)}`)
   function getWellKnownConfiguration(url: string) {
     return TE.tryCatch(
       () => axios.get<WellKnownConfiguration>(url),
