@@ -19,10 +19,10 @@ import keycloak, { KeycloakOptions } from 'fastify-keycloak-adapter'
 const server = fastify()
 
 const opts: KeycloakOptions = {
-  appOrigin: process.env.APP_ORIGIN,
-  keycloakSubdomain: process.env.KEYCLOAK_SUBDOMAIN,
-  clientId: process.env.KEYCLOAK_CLIENT_ID,
-  clientSecret: process.env.KEYCLOAK_CLIENT_SECRET
+  appOrigin: 'http://localhost:8888',
+  keycloakSubdomain: keycloak.yourcompany.com/auth/realms/realm01,
+  clientId: 'client01',
+  clientSecret: 'client01secret'
 }
 
 server.register(keycloak, opts)
