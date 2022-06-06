@@ -20,7 +20,7 @@ const server = fastify()
 
 const opts: KeycloakOptions = {
   appOrigin: 'http://localhost:8888',
-  keycloakSubdomain: keycloak.yourcompany.com/auth/realms/realm01,
+  keycloakSubdomain: 'keycloak.yourcompany.com/auth/realms/realm01',
   clientId: 'client01',
   clientSecret: 'client01secret'
 }
