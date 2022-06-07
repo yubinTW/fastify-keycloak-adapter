@@ -1,17 +1,18 @@
 {
   "name": "fastify-keycloak-adapter",
   "author": "Yubin, Hsu",
-  "version": "0.6.1",
+  "version": "0.6.3",
   "main": "dist/keycloak",
-  "types": "dist/keycloak",
   "keywords": [
     "fastify",
     "keycloak",
     "plugin"
   ],
   "files": [
-    "dist"
+    "dist/keycloak.js",
+    "dist/keycloak.d.ts"
   ],
+  "types": "dist/keycloak.d.ts",
   "description": "A fastify plugin for Keycloak",
   "license": "MIT",
   "homepage": "https://github.com/yubinTW/fastify-keycloak-adapter",
@@ -32,7 +33,6 @@
     "@fastify/jwt": "^5.0.1",
     "@fastify/session": "^8.2.0",
     "axios": "^0.27.2",
-    "fastify": "^3.29.0",
     "fastify-plugin": "^3.0.1",
     "fp-ts": "^2.12.1",
     "grant": "^5.4.21",
@@ -43,6 +43,7 @@
     "@types/node": "^16.11.26",
     "jest": "^27.5.1",
     "prettier": "^2.5.1",
+    "fastify": "^3.29.0",
     "testcontainers-keycloak": "^0.1.2",
     "ts-jest": "^27.1.3",
     "typescript": "^4.6.2"

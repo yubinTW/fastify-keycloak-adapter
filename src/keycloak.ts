@@ -59,21 +59,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     )
   }
 
-  const protocol = pipe(
-    opts.useHttps,
-    O.fromNullable,
-    O.match(
-      () => `http://`,
-      (useHttps) =>
-        pipe(
-          useHttps,
-          B.match(
-            () => `http://`,
-            () => `https://`
-          )
-        )
-    )
-  )
+  const protocol = opts.useHttps ? 'https://' : 'http://'
 
   const keycloakConfiguration = await pipe(
     `${protocol}${opts.keycloakSubdomain}/.well-known/openid-configuration`,
