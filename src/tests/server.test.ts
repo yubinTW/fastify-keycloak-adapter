@@ -51,7 +51,7 @@ describe('server with keycloak testing', () => {
     expect(response.statusCode).toBe(302)
   })
 
-  it('should return 302, when send a request to an endpoint without a valid token', async () => {
+  it('should return 401, when send a request to an endpoint without a valid token', async () => {
     const response = await server.inject({
       method: 'GET',
       url: '/ping',
