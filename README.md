@@ -10,6 +10,11 @@ https://www.npmjs.com/package/fastify-keycloak-adapter
 npm i fastify-keycloak-adapter
 ```
 
+## Fastify Version
+
+- Fastify 4 -> `npm i fastify-keycloak-adapter`
+- Fastify 3 -> `npm i fastify-keycloak-adapter@0.6.3`
+
 ## Usage
 
 ```typescript
@@ -44,7 +49,7 @@ server.register(keycloak, opts)
 
 - `logoutEndpoint` route path of doing logout (optional, defaults to `/logout`)
 
-- `excludedPatterns` string array for non-authorized urls (optional, support  `?`, `*` and `**` wildcards)
+- `excludedPatterns` string array for non-authorized urls (optional, support `?`, `*` and `**` wildcards)
 - `userPayloadMapper` defined the fields of `fastify.session.user` (optional)
 
 ## Configuration example
@@ -62,10 +67,7 @@ const opts: KeycloakOptions = {
   clientId: 'myclient01',
   clientSecret: 'myClientSecret',
   logoutEndpoint: '/logout',
-  excludedPatterns: [
-    '/metrics',
-    '/api/todos/**'
-  ]
+  excludedPatterns: ['/metrics', '/api/todos/**']
 }
 
 server.register(keycloak, opts)
@@ -79,8 +81,8 @@ defined the fields of `fastify.session.user`, you can set value from `UserInfo`
 import { KeycloakOptions, UserInfo } from 'fastify-keycloak-adapter'
 
 const userPayloadMapper = (userPayload: UserInfo) => ({
-    account: userPayload.preferred_username,
-    name: userPayload.name
+  account: userPayload.preferred_username,
+  name: userPayload.name
 })
 
 const opts: KeycloakOptions = {
@@ -95,7 +97,7 @@ use `request.session.user`
 
 ```typescript
 server.get('/users/me', async (request, reply) => {
-    const user = request.session.user
-    return reply.status(200).send({ user })
+  const user = request.session.user
+  return reply.status(200).send({ user })
 })
 ```
