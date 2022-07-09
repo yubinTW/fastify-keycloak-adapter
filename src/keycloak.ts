@@ -9,10 +9,10 @@ import * as E from 'fp-ts/Either'
 import * as O from 'fp-ts/Option'
 import * as TE from 'fp-ts/TaskEither'
 import { pipe } from 'fp-ts/function'
+import * as t from 'io-ts'
 import { inspect } from 'util'
 import axios from 'axios'
 import wcmatch from 'wildcard-match'
-
 declare module 'fastify' {
   interface Session {
     grant: GrantSession
@@ -32,32 +32,101 @@ type RealmResponse = {
 }
 
 export type UserInfo = {
-  email_verified: boolean
-  name: string
-  preferred_username: string
-  given_name: string
-  family_name: string
+  email_verified: Readonly<boolean>
+  name: Readonly<string>
+  preferred_username: Readonly<string>
+  given_name: Readonly<string>
+  family_name: Readonly<string>
 }
 
-export type KeycloakOptions = {
-  appOrigin: string
-  keycloakSubdomain: string
-  clientId: string
-  clientSecret: string
-  useHttps?: boolean
-  logoutEndpoint?: string
-  excludedPatterns?: Array<string>
-  scope?: Array<string>
-  userPayloadMapper?: (userPayload: UserInfo) => {}
+const AppOriginCodec = new t.Type<string, string, unknown>(
+  'AppOrigin',
+  (input: unknown): input is string => typeof input === 'string',
+  (input, context) =>
+    typeof input === 'string' &&
+    (input.startsWith('http://') || input.startsWith('https://')) &&
+    input.endsWith('/') === false
+      ? t.success(input)
+      : t.failure(input, context),
+  (a) => t.identity(a)
+)
+
+const KeycloakSubdomainCodec = new t.Type<string, string, unknown>(
+  'KeycloakSubdomain',
+  (input: unknown): input is string => typeof input === 'string',
+  (input, context) =>
+    typeof input === 'string' &&
+    input.length > 0 &&
+    input.startsWith('http://') === false &&
+    input.startsWith('https://') === false &&
+    input.endsWith('/') === false
+      ? t.success(input)
+      : t.failure(input, context),
+  (a) => t.identity(a)
+)
+
+const requiredOptions = t.type({
+  appOrigin: t.readonly(AppOriginCodec),
+  keycloakSubdomain: t.readonly(KeycloakSubdomainCodec),
+  clientId: t.readonly(t.string),
+  clientSecret: t.readonly(t.string)
+})
+
+const partialOptions = t.partial({
+  useHttps: t.readonly(t.boolean),
+  logoutEndpoint: t.readonly(t.string),
+  excludedPatterns: t.readonly(t.array(t.string)),
+  scope: t.array(t.readonly(t.string))
+})
+
+const KeycloakOptions = t.intersection([requiredOptions, partialOptions])
+
+export type KeycloakOptions = t.TypeOf<typeof KeycloakOptions> & { userPayloadMapper?: (userPayload: UserInfo) => {} }
+
+function getWellKnownConfiguration(url: string) {
+  return TE.tryCatch(
+    () => axios.get<WellKnownConfiguration>(url),
+    (e) => new Error(`${e}`)
+  )
+}
+
+function validAppOrigin(opts: KeycloakOptions): E.Either<Error, KeycloakOptions> {
+  return pipe(
+    opts.appOrigin,
+    AppOriginCodec.decode,
+    E.match(
+      (_) => E.left(new Error(`Invalid appOrigin: ${opts.appOrigin}`)),
+      (_) => E.right(opts)
+    )
+  )
+}
+
+function validKeycloakSubdomain(opts: KeycloakOptions): E.Either<Error, KeycloakOptions> {
+  return pipe(
+    opts.keycloakSubdomain,
+    KeycloakSubdomainCodec.decode,
+    E.match(
+      (_) => E.left(new Error(`Invalid keycloakSubdomain: ${opts.keycloakSubdomain}`)),
+      (_) => E.right(opts)
+    )
+  )
 }
 
 export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOptions) => {
-  function getWellKnownConfiguration(url: string) {
-    return TE.tryCatch(
-      () => axios.get<WellKnownConfiguration>(url),
-      (e) => new Error(`Failed to get openid configuration: ${e}`)
+  pipe(
+    opts,
+    validAppOrigin,
+    E.chain(validKeycloakSubdomain),
+    E.match(
+      (e) => {
+        fastify.log.error(`${e}`)
+        throw new Error(e.message)
+      },
+      (_) => {
+        fastify.log.debug(`Keycloak Options valid successfully! ${inspect(opts, false, null)}`)
+      }
     )
-  }
+  )
 
   const protocol = opts.useHttps ? 'https://' : 'http://'
 
