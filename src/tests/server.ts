@@ -8,6 +8,11 @@ const startFastify = async (port: number, keycloakOptions: KeycloakOptions) => {
     return reply.status(200).send({ msg: 'pong' })
   })
 
+  server.get('/me', async (request, reply) => {
+    const user = request.session.user
+    return reply.status(200).send({ user })
+  })
+
   await server.register(keycloak, keycloakOptions)
 
   await server.listen({

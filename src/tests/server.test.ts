@@ -31,7 +31,10 @@ describe('server with keycloak testing', () => {
       appOrigin: 'http://localhost:8888',
       keycloakSubdomain: `${keycloak.getHost()}:${keycloak.getMappedPort(8080)}/auth/realms/demo`,
       clientId: 'client01',
-      clientSecret: 'client01secret'
+      clientSecret: 'client01secret',
+      userPayloadMapper: (userPayload) => ({
+        username: userPayload.preferred_username
+      })
     }
 
     server = await startFastify(8888, keycloakOptions)
@@ -68,5 +71,18 @@ describe('server with keycloak testing', () => {
       headers: { authorization: `Bearer ${token}` }
     })
     expect(response.statusCode).toBe(200)
+  })
+
+  it('should return custom userPayload', async () => {
+    const token = await keycloak.getAccessToken('demo', 'user01', 'user01password', 'client01', 'client01secret')
+    const response = await server.inject({
+      method: 'GET',
+      url: '/me',
+      headers: { authorization: `Bearer ${token}` }
+    })
+    const user = JSON.parse(response.body)['user']
+    const username = user['username']
+    expect(response.statusCode).toBe(200)
+    expect(username).toBe('user01')
   })
 })
