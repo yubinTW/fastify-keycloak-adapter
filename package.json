@@ -1,7 +1,7 @@
 {
   "name": "fastify-keycloak-adapter",
   "author": "Yubin, Hsu",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "main": "dist/keycloak",
   "keywords": [
     "fastify",
@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@fastify/cookie": "^7.0.0",
-    "@fastify/jwt": "^6.2.1",
+    "@fastify/jwt": "^6.3.1",
     "@fastify/session": "^9.0.0",
     "axios": "^0.27.2",
     "fastify-plugin": "^4.0.0",
@@ -40,13 +40,13 @@
     "wildcard-match": "^5.1.2"
   },
   "devDependencies": {
-    "@types/jest": "^28.1.4",
-    "@types/node": "^18.0.3",
-    "fastify": "^4.2.0",
-    "jest": "^28.1.2",
+    "@types/jest": "^28.1.5",
+    "@types/node": "^18.0.4",
+    "fastify": "^4.2.1",
+    "jest": "^28.1.3",
     "prettier": "^2.7.1",
-    "testcontainers-keycloak": "^0.2.1",
-    "ts-jest": "^28.0.5",
+    "testcontainers-keycloak": "^0.2.2",
+    "ts-jest": "^28.0.6",
     "typescript": "^4.7.4"
   }
 }
