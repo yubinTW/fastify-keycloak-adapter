@@ -56,9 +56,9 @@ server.register(keycloak, opts)
 
 - `excludedPatterns` string array for non-authorized urls (optional, support `?`, `*` and `**` wildcards)
 
-- `disableCookiePlugin` set true if your application register the [fastify-cookie](https://github.com/fastify/fastify-cookie) plugin itself. Otherwise **fastify-cookie** will be registered by this plugin, because it's mandatory.
+- `disableCookiePlugin` set true if your application register the [fastify-cookie](https://github.com/fastify/fastify-cookie) plugin itself. Otherwise **fastify-cookie** will be registered by this plugin, because it's mandatory. (optional, defaults to `false`)
 
-- `disableSessionPlugin` set true if your application register the [fastify-session](https://github.com/fastify/fastify-session) plugin itself. Otherwise **fastify-session** will be registered by this plugin, because it's mandatory. 
+- `disableSessionPlugin` set true if your application register the [fastify-session](https://github.com/fastify/fastify-session) plugin itself. Otherwise **fastify-session** will be registered by this plugin, because it's mandatory. (optional, defaults to `false`)
   
 - `userPayloadMapper` defined the fields of `fastify.session.user` (optional)
 
