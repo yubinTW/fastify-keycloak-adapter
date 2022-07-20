@@ -52,6 +52,8 @@ server.register(keycloak, opts)
 - `excludedPatterns` string array for non-authorized urls (optional, support `?`, `*` and `**` wildcards)
 - `userPayloadMapper` defined the fields of `fastify.session.user` (optional)
 
+- `unauthorizedHandler(request, reply)` is a function to customize the handling (e.g. the response) of unauthorized requests (invalid auth token)
+
 ## Configuration example
 
 ```typescript
@@ -88,6 +90,24 @@ const userPayloadMapper = (userPayload: UserInfo) => ({
 const opts: KeycloakOptions = {
   // ...
   userPayloadMapper: userPayloadMapper
+}
+```
+
+## Set unauthorizedHandler
+
+Provides a custom handler for unauthorized requests.
+
+```typescript
+import { FastifyReply, FastifyRequest } from 'fastify';
+import { KeycloakOptions } from 'fastify-keycloak-adapter'
+
+const unauthorizedHandler = (request: FastifyRequest, reply: FastifyReply) => {
+  reply.status(401).send(`Invalid request`);
+};
+
+const opts: KeycloakOptions = {
+  // ...
+  unauthorizedHandler: unauthorizedHandler
 }
 ```
 
