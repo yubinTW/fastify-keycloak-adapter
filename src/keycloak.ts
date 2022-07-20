@@ -76,7 +76,9 @@ const partialOptions = t.partial({
   useHttps: t.readonly(t.boolean),
   logoutEndpoint: t.readonly(t.string),
   excludedPatterns: t.readonly(t.array(t.string)),
-  scope: t.array(t.readonly(t.string))
+  scope: t.array(t.readonly(t.string)),
+  disableCookiePlugin: t.readonly(t.boolean),
+  disableSessionPlugin: t.readonly(t.boolean)
 })
 
 const KeycloakOptions = t.intersection([requiredOptions, partialOptions])
@@ -137,12 +139,16 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
   )()
 
   function registerDependentPlugin(config: WellKnownConfiguration) {
-    fastify.register(cookie)
+    if (!opts.disableCookiePlugin) {
+      fastify.register(cookie)
+    }
 
-    fastify.register(session, {
-      secret: new Array(32).fill('a').join(''),
-      cookie: { secure: false }
-    })
+    if (!opts.disableSessionPlugin) {
+      fastify.register(session, {
+        secret: new Array(32).fill('a').join(''),
+        cookie: { secure: false }
+      })
+    }
 
     fastify.register(
       grant.fastify()({
