@@ -53,7 +53,7 @@ server.register(keycloak, opts)
 
 - `userPayloadMapper(userPayload)` defined the fields of `fastify.session.user` (optional)
 
-- `unauthorizedHandler(request, reply)` is a function to customize the handling (e.g. the response) of unauthorized requests (invalid auth token)
+- `unauthorizedHandler(request, reply)` is a function to customize the handling (e.g. the response) of unauthorized requests (optional)
 
 ## Configuration example
 
