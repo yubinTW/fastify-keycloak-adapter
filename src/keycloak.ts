@@ -81,7 +81,10 @@ const partialOptions = t.partial({
 
 const KeycloakOptions = t.intersection([requiredOptions, partialOptions])
 
-export type KeycloakOptions = t.TypeOf<typeof KeycloakOptions> & { userPayloadMapper?: (userPayload: UserInfo) => {} }
+export type KeycloakOptions = t.TypeOf<typeof KeycloakOptions> & {
+  userPayloadMapper?: (userPayload: UserInfo) => {}
+  unauthorizedHandler?: (request: FastifyRequest, reply: FastifyReply) => void
+}
 
 function getWellKnownConfiguration(url: string) {
   return TE.tryCatch(
@@ -317,6 +320,17 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     )
   }
 
+  const unauthorizedHandler = pipe(
+    opts.unauthorizedHandler,
+    O.fromNullable,
+    O.match(
+      () => (_request: FastifyRequest, reply: FastifyReply) => {
+        reply.status(401).send(`Unauthorized`)
+      },
+      (a) => a
+    )
+  )
+
   function authenticationByToken(request: FastifyRequest, reply: FastifyReply, bearerToken: string) {
     pipe(
       bearerToken,
@@ -325,7 +339,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
       E.fold(
         (e) => {
           request.log.debug(`${e}`)
-          reply.status(401).send(`Unauthorized`)
+          unauthorizedHandler(request, reply)
         },
         (decodedJson) => {
           request.session.user = userPayloadMapper(decodedJson)
