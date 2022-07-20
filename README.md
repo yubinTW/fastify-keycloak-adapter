@@ -1,4 +1,5 @@
 # Fastify-Keycloak-Adapter
+
 [![Node.js CI](https://github.com/yubinTW/fastify-keycloak-adapter/actions/workflows/node.js.yml/badge.svg)](https://github.com/yubinTW/fastify-keycloak-adapter/actions/workflows/node.js.yml)
 [![NPM version](https://img.shields.io/npm/v/fastify-keycloak-adapter.svg?style=flat)](https://www.npmjs.com/package/fastify-keycloak-adapter)
 
@@ -11,6 +12,7 @@ https://www.npmjs.com/package/fastify-keycloak-adapter
 ```
 npm i fastify-keycloak-adapter
 ```
+
 ```
 yarn add fastify-keycloak-adapter
 ```
@@ -59,7 +61,7 @@ server.register(keycloak, opts)
 - `disableCookiePlugin` set true if your application register the [fastify-cookie](https://github.com/fastify/fastify-cookie) plugin itself. Otherwise **fastify-cookie** will be registered by this plugin, because it's mandatory. (optional, defaults to `false`)
 
 - `disableSessionPlugin` set true if your application register the [fastify-session](https://github.com/fastify/fastify-session) plugin itself. Otherwise **fastify-session** will be registered by this plugin, because it's mandatory. (optional, defaults to `false`)
-  
+
 - `userPayloadMapper` defined the fields of `fastify.session.user` (optional)
 
 ## Configuration example
@@ -106,27 +108,27 @@ const opts: KeycloakOptions = {
 Use the options to disable the cookie and session plugin registration, in case you want to initialize the plugins yourself, to provide your own set of configurations for these plugins.
 
 ```typescript
-import fastify from 'fastify';
-import fastifyCookie from '@fastify/cookie';
-import session from '@fastify/session';
+import fastify from 'fastify'
+import fastifyCookie from '@fastify/cookie'
+import session from '@fastify/session'
 import keycloak, { KeycloakOptions } from 'fastify-keycloak-adapter'
 
-const server = fastify();
+const server = fastify()
 
-server.register(fastifyCookie);
+server.register(fastifyCookie)
 server.register(session, {
   secret: '<SOME_SECRET>',
   cookie: {
-    secure: false,
-  },
-});
+    secure: false
+  }
+})
 
 const opts: KeycloakOptions = {
   // ...
   disableCookiePlugin: true,
-  disableSessionPlugin: true,
+  disableSessionPlugin: true
 }
-server.register(keycloak, opts);
+server.register(keycloak, opts)
 ```
 
 ## Get login user
@@ -141,4 +143,5 @@ server.get('/users/me', async (request, reply) => {
 ```
 
 # License
+
 [MIT License](LICENSE)
