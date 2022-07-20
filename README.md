@@ -1,4 +1,5 @@
 # Fastify-Keycloak-Adapter
+[![Node.js CI](https://github.com/yubinTW/fastify-keycloak-adapter/actions/workflows/node.js.yml/badge.svg)](https://github.com/yubinTW/fastify-keycloak-adapter/actions/workflows/node.js.yml)
 [![NPM version](https://img.shields.io/npm/v/fastify-keycloak-adapter.svg?style=flat)](https://www.npmjs.com/package/fastify-keycloak-adapter)
 
 `fastify-keycloak-adapter` is a keycloak adapter for a Fastify app.
