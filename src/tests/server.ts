@@ -16,7 +16,7 @@ const startFastify = async (port: number, keycloakOptions: KeycloakOptions) => {
   await server.register(keycloak, keycloakOptions)
 
   await server.listen({
-    port: 8888
+    port: port
   })
 
   return server

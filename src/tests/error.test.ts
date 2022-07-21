@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify'
 import { KeycloakOptions } from '../keycloak'
 import { startFastify } from './server'
 
-describe('Error beheavior', () => {
+describe('Error behavior', () => {
   let server: FastifyInstance
 
   beforeAll(async () => {})
@@ -26,7 +26,7 @@ describe('Error beheavior', () => {
     }
   })
 
-  it('should error, when given an invalid keycloakSybdomain', async () => {
+  it('should error, when given an invalid keycloakSubdomain', async () => {
     const keycloakOptions: KeycloakOptions = {
       appOrigin: 'http://localhost:8888',
       keycloakSubdomain: `localhost:8080/auth/realms/demo/`,
