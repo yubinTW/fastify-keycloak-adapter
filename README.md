@@ -62,7 +62,9 @@ server.register(keycloak, opts)
 
 - `disableSessionPlugin` set true if your application register the [fastify-session](https://github.com/fastify/fastify-session) plugin itself. Otherwise **fastify-session** will be registered by this plugin, because it's mandatory. (optional, defaults to `false`)
 
-- `userPayloadMapper` defined the fields of `fastify.session.user` (optional)
+- `userPayloadMapper(userPayload)` defined the fields of `fastify.session.user` (optional)
+
+- `unauthorizedHandler(request, reply)` is a function to customize the handling (e.g. the response) of unauthorized requests (optional)
 
 ## Configuration example
 
@@ -100,6 +102,24 @@ const userPayloadMapper = (userPayload: UserInfo) => ({
 const opts: KeycloakOptions = {
   // ...
   userPayloadMapper: userPayloadMapper
+}
+```
+
+## Set unauthorizedHandler
+
+Provides a custom handler for unauthorized requests.
+
+```typescript
+import { FastifyReply, FastifyRequest } from 'fastify'
+import { KeycloakOptions } from 'fastify-keycloak-adapter'
+
+const unauthorizedHandler = (request: FastifyRequest, reply: FastifyReply) => {
+  reply.status(401).send(`Invalid request`)
+}
+
+const opts: KeycloakOptions = {
+  // ...
+  unauthorizedHandler: unauthorizedHandler
 }
 ```
 
