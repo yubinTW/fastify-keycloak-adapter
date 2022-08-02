@@ -12,7 +12,9 @@ import { pipe } from 'fp-ts/function'
 import * as t from 'io-ts'
 import { inspect } from 'util'
 import axios from 'axios'
+import axiosRetry from 'axios-retry'
 import wcmatch from 'wildcard-match'
+
 declare module 'fastify' {
   interface Session {
     grant: GrantSession
@@ -78,7 +80,8 @@ const partialOptions = t.partial({
   excludedPatterns: t.readonly(t.array(t.string)),
   scope: t.array(t.readonly(t.string)),
   disableCookiePlugin: t.readonly(t.boolean),
-  disableSessionPlugin: t.readonly(t.boolean)
+  disableSessionPlugin: t.readonly(t.boolean),
+  retries: t.readonly(t.number)
 })
 
 const KeycloakOptions = t.intersection([requiredOptions, partialOptions])
@@ -118,6 +121,14 @@ function validKeycloakSubdomain(opts: KeycloakOptions): E.Either<Error, Keycloak
 }
 
 export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOptions) => {
+  axiosRetry(axios, {
+    retries: opts.retries ? opts.retries : 3,
+    retryDelay: axiosRetry.exponentialDelay,
+    onRetry: (retryCount, error, _requestConfig) => {
+      fastify.log.error(`Retry #${retryCount} ${error.message}`)
+    }
+  })
+
   pipe(
     opts,
     validAppOrigin,

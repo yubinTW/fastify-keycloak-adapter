@@ -33,6 +33,7 @@
     "@fastify/jwt": "^6.3.1",
     "@fastify/session": "^9.0.0",
     "axios": "^0.27.2",
+    "axios-retry": "^3.3.1",
     "fastify-plugin": "^4.0.0",
     "fp-ts": "^2.12.2",
     "grant": "^5.4.21",

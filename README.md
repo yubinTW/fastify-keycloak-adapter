@@ -54,6 +54,8 @@ server.register(keycloak, opts)
 
 - `scope` client scope of keycloak (optional, string[], defaults to `['openid']`)
 
+- `retries` The number of times to retry before failing. (optional, number, defaults to 3)
+
 - `logoutEndpoint` route path of doing logout (optional, defaults to `/logout`)
 
 - `excludedPatterns` string array for non-authorized urls (optional, support `?`, `*` and `**` wildcards)
