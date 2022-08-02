@@ -29,24 +29,25 @@
     "fix-prettier": "prettier --write \"./src/**/*.ts\""
   },
   "dependencies": {
-    "@fastify/cookie": "^7.2.0",
+    "@fastify/cookie": "^7.3.1",
     "@fastify/jwt": "^6.3.1",
     "@fastify/session": "^9.0.0",
     "axios": "^0.27.2",
+    "axios-retry": "^3.3.1",
     "fastify-plugin": "^4.0.0",
-    "fp-ts": "^2.12.1",
+    "fp-ts": "^2.12.2",
     "grant": "^5.4.21",
-    "io-ts": "^2.2.16",
+    "io-ts": "^2.2.17",
     "wildcard-match": "^5.1.2"
   },
   "devDependencies": {
-    "@types/jest": "^28.1.5",
-    "@types/node": "^18.0.4",
-    "fastify": "^4.2.1",
+    "@types/jest": "^28.1.6",
+    "@types/node": "^18.6.3",
+    "fastify": "^4.3.0",
     "jest": "^28.1.3",
     "prettier": "^2.7.1",
     "testcontainers-keycloak": "^0.2.2",
-    "ts-jest": "^28.0.6",
+    "ts-jest": "^28.0.7",
     "typescript": "^4.7.4"
   }
 }
