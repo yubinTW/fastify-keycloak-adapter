@@ -20,7 +20,7 @@ yarn add fastify-keycloak-adapter
 ## Fastify Version
 
 - Fastify 4 -> `npm i fastify-keycloak-adapter`
-- Fastify 3 -> `npm i fastify-keycloak-adapter@0.6.3`
+- Fastify 3 -> `npm i fastify-keycloak-adapter@0.6.3` (deprecated)
 
 ## Usage
 
@@ -87,7 +87,8 @@ const opts: KeycloakOptions = {
   clientId: 'myclient01',
   clientSecret: 'myClientSecret',
   logoutEndpoint: '/logout',
-  excludedPatterns: ['/metrics', '/api/todos/**']
+  excludedPatterns: ['/metrics', '/manifest.json', '/api/todos/**'],
+  callback: '/hello'
 }
 
 server.register(keycloak, opts)
