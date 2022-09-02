@@ -82,6 +82,7 @@ const partialOptions = t.partial({
   logoutEndpoint: t.readonly(t.string),
   excludedPatterns: t.readonly(t.array(t.string)),
   scope: t.array(t.readonly(t.string)),
+  callback: t.readonly(t.string),
   disableCookiePlugin: t.readonly(t.boolean),
   disableSessionPlugin: t.readonly(t.boolean),
   retries: t.readonly(t.number),
@@ -182,7 +183,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
           oauth: 2,
           authorize_url: config.authorization_endpoint,
           access_url: config.token_endpoint,
-          callback: '/',
+          callback: opts.callback ?? '/',
           scope: opts.scope ?? ['openid'],
           nonce: true
         }
