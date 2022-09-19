@@ -29,7 +29,7 @@
     "fix-prettier": "prettier --write \"./src/**/*.ts\""
   },
   "dependencies": {
-    "@fastify/cookie": "^7.4.0",
+    "@fastify/cookie": "^8.2.0",
     "@fastify/jwt": "^6.3.2",
     "@fastify/session": "^10.0.0",
     "axios": "^0.27.2",
