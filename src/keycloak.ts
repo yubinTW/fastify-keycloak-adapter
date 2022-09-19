@@ -92,7 +92,7 @@ const partialOptions = t.partial({
 const KeycloakOptions = t.intersection([requiredOptions, partialOptions])
 
 export type KeycloakOptions = t.TypeOf<typeof KeycloakOptions> & {
-  userPayloadMapper?: (userPayload: UserInfo) => {}
+  userPayloadMapper?: (userPayload: UserInfo) => any
   unauthorizedHandler?: (request: FastifyRequest, reply: FastifyReply) => void
 }
 
