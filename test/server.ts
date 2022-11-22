@@ -1,5 +1,5 @@
 import fastify, { FastifyInstance } from 'fastify'
-import keycloak, { KeycloakOptions } from '../keycloak'
+import keycloak, { KeycloakOptions } from '../src/keycloak'
 
 const startFastify = async (port: number, keycloakOptions: KeycloakOptions) => {
   const server: FastifyInstance = fastify()
