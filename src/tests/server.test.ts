@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify'
 import { KeycloakContainer, StartedKeycloakContainer } from 'testcontainers-keycloak'
+import { describe, beforeAll, afterAll, expect, it } from 'vitest'
 import { KeycloakOptions } from '../keycloak'
 import { startFastify } from './server'
 
