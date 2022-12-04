@@ -96,14 +96,18 @@ server.register(keycloak, opts)
 
 ## Set userPayloadMapper
 
-defined the fields of `fastify.session.user`, you can set value from `UserInfo`
+defined the fields of `fastify.session.user`, use the payload from JWT token
+
+use `DefaultToken` in default case
+
+or you should define the type by yourself, in case the keycloak server has custom payload
 
 ```typescript
-import { KeycloakOptions, UserInfo } from 'fastify-keycloak-adapter'
+import { KeycloakOptions, DefaultToken } from 'fastify-keycloak-adapter'
 
-const userPayloadMapper = (userPayload: UserInfo) => ({
-  account: userPayload.preferred_username,
-  name: userPayload.name
+const userPayloadMapper = (tokenPayload: unknown) => ({
+  account: (tokenPayload as DefaultToken).preferred_username,
+  name: (tokenPayload as DefaultToken).name
 })
 
 const opts: KeycloakOptions = {

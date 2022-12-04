@@ -36,7 +36,7 @@ type RealmResponse = {
   public_key: string
 }
 
-export type UserInfo = {
+export type DefaultToken = {
   email_verified: Readonly<boolean>
   name: Readonly<string>
   preferred_username: Readonly<string>
@@ -92,7 +92,7 @@ const partialOptions = t.partial({
 const KeycloakOptions = t.intersection([requiredOptions, partialOptions])
 
 export type KeycloakOptions = t.TypeOf<typeof KeycloakOptions> & {
-  userPayloadMapper?: (userPayload: UserInfo) => any
+  userPayloadMapper?: (tokenPayload: unknown) => any
   unauthorizedHandler?: (request: FastifyRequest, reply: FastifyReply) => void
 }
 
@@ -341,9 +341,9 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     opts.userPayloadMapper,
     O.fromNullable,
     O.match(
-      () => (userPayload: UserInfo) => ({
-        account: userPayload.preferred_username,
-        name: userPayload.name
+      () => (tokenPayload: DefaultToken) => ({
+        account: tokenPayload.preferred_username,
+        name: tokenPayload.name
       }),
       (a) => a
     )
