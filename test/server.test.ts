@@ -102,12 +102,20 @@ describe('server with keycloak testing', () => {
   describe('custom user payload mapping configuration', () => {
     let server: FastifyInstance
 
+    type MyToken = {
+      preferred_username: Readonly<string>
+      deptname: Readonly<string>
+    }
+
+    const userPayload = (tokenPayload: unknown) => ({
+      username: (tokenPayload as MyToken).preferred_username,
+      deptName: (tokenPayload as MyToken).deptname
+    })
+
     beforeAll(async () => {
       server = await startFastify(serverPort, {
         ...keycloakOptions,
-        userPayloadMapper: (userPayload) => ({
-          username: userPayload.preferred_username
-        })
+        userPayloadMapper: userPayload
       })
       await server.ready()
     })
