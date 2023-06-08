@@ -1,10 +1,10 @@
 import { FastifyInstance } from 'fastify'
 import { KeycloakOptions } from '../src/keycloak'
-import { startFastify } from './server'
+import { serverOf, serverStart } from './server'
 import { describe, beforeAll, afterAll, it, expect } from 'vitest'
 
 describe('Error behavior', () => {
-  let server: FastifyInstance
+  const server: FastifyInstance = serverOf()
 
   beforeAll(async () => {})
 
@@ -18,7 +18,7 @@ describe('Error behavior', () => {
       clientSecret: 'client01secret'
     }
 
-    server = await startFastify(8888, keycloakOptions)
+    await serverStart(server, 8888, keycloakOptions)
     await server.ready()
   })
 
@@ -30,7 +30,7 @@ describe('Error behavior', () => {
       clientSecret: 'client01secret'
     }
 
-    server = await startFastify(8888, keycloakOptions)
+    await serverStart(server, 8888, keycloakOptions)
     await server.ready()
   })
 })

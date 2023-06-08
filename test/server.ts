@@ -1,10 +1,14 @@
 import fastify, { FastifyInstance } from 'fastify'
 import keycloak, { KeycloakOptions } from '../src/keycloak'
 
-const startFastify = async (port: number, keycloakOptions: KeycloakOptions) => {
-  const server: FastifyInstance = fastify()
+export const serverOf: () => FastifyInstance = () => fastify()
 
-  server.get('/ping', async (request, reply) => {
+export const serverStart: (
+  server: FastifyInstance,
+  port: number,
+  keycloakOptions: KeycloakOptions
+) => Promise<FastifyInstance> = async (server, port, keycloakOptions) => {
+  server.get('/ping', async (_request, reply) => {
     return reply.status(200).send({ msg: 'pong' })
   })
 
@@ -21,5 +25,3 @@ const startFastify = async (port: number, keycloakOptions: KeycloakOptions) => {
 
   return server
 }
-
-export { startFastify }
