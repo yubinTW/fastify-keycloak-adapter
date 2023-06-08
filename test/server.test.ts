@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify'
 import { KeycloakContainer, StartedKeycloakContainer } from 'testcontainers-keycloak'
 import { describe, beforeAll, afterAll, expect, it } from 'vitest'
 import { KeycloakOptions } from '../src/keycloak'
-import { startFastify } from './server'
+import { serverOf, serverStart } from './server'
 
 describe('server with keycloak testing', () => {
   const serverPort = 8888
@@ -45,10 +45,10 @@ describe('server with keycloak testing', () => {
   })
 
   describe('minimal plugin configuration', () => {
-    let server: FastifyInstance
+    const server: FastifyInstance = serverOf()
 
     beforeAll(async () => {
-      server = await startFastify(serverPort, keycloakOptions)
+      await serverStart(server, serverPort, keycloakOptions)
       await server.ready()
     })
 
@@ -100,7 +100,7 @@ describe('server with keycloak testing', () => {
   })
 
   describe('custom user payload mapping configuration', () => {
-    let server: FastifyInstance
+    const server: FastifyInstance = serverOf()
 
     type MyToken = {
       preferred_username: Readonly<string>
@@ -113,7 +113,7 @@ describe('server with keycloak testing', () => {
     })
 
     beforeAll(async () => {
-      server = await startFastify(serverPort, {
+      await serverStart(server, serverPort, {
         ...keycloakOptions,
         userPayloadMapper: userPayload
       })
@@ -140,10 +140,10 @@ describe('server with keycloak testing', () => {
   })
 
   describe('custom unauthorized handler configuration', () => {
-    let server: FastifyInstance
+    const server: FastifyInstance = serverOf()
 
     beforeAll(async () => {
-      server = await startFastify(serverPort, {
+      await serverStart(server, serverPort, {
         ...keycloakOptions,
         unauthorizedHandler: (_request, reply) => {
           reply.status(403).send(`Forbidden`)
