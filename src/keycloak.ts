@@ -1,20 +1,19 @@
-import fastifyPlugin from 'fastify-plugin'
 import cookie from '@fastify/cookie'
-import session from '@fastify/session'
-import grant, { GrantResponse, GrantSession } from 'grant'
 import jwt from '@fastify/jwt'
-import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify'
-import * as B from 'fp-ts/boolean'
-import * as E from 'fp-ts/Either'
-import * as O from 'fp-ts/Option'
-import * as TE from 'fp-ts/TaskEither'
-import { pipe } from 'fp-ts/function'
-import * as t from 'io-ts'
+import session from '@fastify/session'
 import axios, { AxiosError } from 'axios'
 import axiosRetry from 'axios-retry'
-import wcmatch from 'wildcard-match'
+import { FastifyInstance, FastifyReply, FastifyRequest, HookHandlerDoneFunction } from 'fastify'
+import fastifyPlugin from 'fastify-plugin'
+import * as B from 'fp-ts/boolean'
+import * as E from 'fp-ts/Either'
+import { pipe } from 'fp-ts/function'
+import * as O from 'fp-ts/Option'
+import * as TE from 'fp-ts/TaskEither'
+import grant, { GrantResponse, GrantSession } from 'grant'
+import * as t from 'io-ts'
 import qs from 'qs'
-import { HookHandlerDoneFunction } from 'fastify'
+import wcmatch from 'wildcard-match'
 
 declare module 'fastify' {
   interface Session {
@@ -92,7 +91,7 @@ const partialOptions = t.partial({
 const KeycloakOptions = t.intersection([requiredOptions, partialOptions])
 
 export type KeycloakOptions = t.TypeOf<typeof KeycloakOptions> & {
-  userPayloadMapper?: (tokenPayload: unknown) => any
+  userPayloadMapper?: (tokenPayload: unknown) => object
   unauthorizedHandler?: (request: FastifyRequest, reply: FastifyReply) => void
 }
 
@@ -108,8 +107,8 @@ function validAppOrigin(opts: KeycloakOptions): E.Either<Error, KeycloakOptions>
     opts.appOrigin,
     AppOriginCodec.decode,
     E.match(
-      (_) => E.left(new Error(`Invalid appOrigin: ${opts.appOrigin}`)),
-      (_) => E.right(opts)
+      () => E.left(new Error(`Invalid appOrigin: ${opts.appOrigin}`)),
+      () => E.right(opts)
     )
   )
 }
@@ -119,8 +118,8 @@ function validKeycloakSubdomain(opts: KeycloakOptions): E.Either<Error, Keycloak
     opts.keycloakSubdomain,
     KeycloakSubdomainCodec.decode,
     E.match(
-      (_) => E.left(new Error(`Invalid keycloakSubdomain: ${opts.keycloakSubdomain}`)),
-      (_) => E.right(opts)
+      () => E.left(new Error(`Invalid keycloakSubdomain: ${opts.keycloakSubdomain}`)),
+      () => E.right(opts)
     )
   )
 }
@@ -129,6 +128,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
   axiosRetry(axios, {
     retries: opts.retries ? opts.retries : 3,
     retryDelay: axiosRetry.exponentialDelay,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onRetry: (retryCount, error, _requestConfig) => {
       fastify.log.error(`Retry #${retryCount} ${error.message}`)
     }
@@ -143,7 +143,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
         fastify.log.error(`${e}`)
         throw new Error(e.message)
       },
-      (_) => {
+      () => {
         fastify.log.debug(`Keycloak Options valid successfully. Keycloak options: ${JSON.stringify(opts)}`)
       }
     )
@@ -277,14 +277,14 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     )
   }
 
-  function decodedTokenToJson(decodedToken: string): E.Either<Error, any> {
+  function decodedTokenToJson(decodedToken: string): E.Either<Error, unknown> {
     return E.tryCatch(
       () => JSON.parse(JSON.stringify(decodedToken)),
       (e) => new Error(`Failed to parsing json from decodedToken: ${e}`)
     )
   }
 
-  function authentication(request: FastifyRequest): E.Either<Error, any> {
+  function authentication(request: FastifyRequest): E.Either<Error, unknown> {
     return pipe(
       getGrantFromSession(request),
       E.chain(getResponseFromGrant),
@@ -341,9 +341,9 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     opts.userPayloadMapper,
     O.fromNullable,
     O.match(
-      () => (tokenPayload: DefaultToken) => ({
-        account: tokenPayload.preferred_username,
-        name: tokenPayload.name
+      () => (tokenPayload: unknown) => ({
+        account: (tokenPayload as DefaultToken).preferred_username,
+        name: (tokenPayload as DefaultToken).name
       }),
       (a) => a
     )
@@ -376,7 +376,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
       request.log.debug('Keycloak adapter: The token has expired, refreshing token ...')
       updateToken(request, done)
     } else {
-      if (request.method === 'GET') {
+      if (request.method === 'GET' && !opts.unauthorizedHandler) {
         reply.redirect(`${opts.appOrigin}/connect/keycloak`)
       } else {
         unauthorizedHandler(request, reply)
@@ -392,7 +392,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
           authenticationErrorHandler(e, request, reply, done)
         },
         (decodedJson) => {
-          request.session.user = userPayloadMapper(decodedJson)
+          request.session.user = userPayloadMapper(decodedJson as DefaultToken)
           request.log.debug(`${JSON.stringify(request.session.user)}`)
           done()
         }
@@ -428,7 +428,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
           done()
         },
         (decodedJson) => {
-          request.session.user = userPayloadMapper(decodedJson)
+          request.session.user = userPayloadMapper(decodedJson as DefaultToken)
           request.log.debug(`${JSON.stringify(request.session.user)}`)
           done()
         }
@@ -436,10 +436,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     )
   }
 
-  const matchers = pipe(
-    opts.excludedPatterns?.map((pattern) => wcmatch(pattern)),
-    O.fromNullable
-  )
+  const matchers = pipe(opts.excludedPatterns?.map((pattern) => wcmatch(pattern)), O.fromNullable)
 
   function filterExcludedPattern(request: FastifyRequest) {
     return pipe(
@@ -528,5 +525,4 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
   })
 
   fastify.log.info(`Keycloak registered successfully!`)
-  return fastify
 })

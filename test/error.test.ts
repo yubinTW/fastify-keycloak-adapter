@@ -1,7 +1,8 @@
 import { FastifyInstance } from 'fastify'
+import { afterAll, beforeAll, describe, it } from 'vitest'
+
 import { KeycloakOptions } from '../src/keycloak'
 import { serverOf, serverStart } from './server'
-import { describe, beforeAll, afterAll, it, expect } from 'vitest'
 
 describe('Error behavior', () => {
   const server: FastifyInstance = serverOf()

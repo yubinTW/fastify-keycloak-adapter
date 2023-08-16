@@ -1,4 +1,5 @@
 import fastify, { FastifyInstance } from 'fastify'
+
 import keycloak, { KeycloakOptions } from '../src/keycloak'
 
 export const serverOf: () => FastifyInstance = () => fastify()
