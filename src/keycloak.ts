@@ -436,10 +436,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     )
   }
 
-  const matchers = pipe(
-    opts.excludedPatterns?.map((pattern) => wcmatch(pattern)),
-    O.fromNullable
-  )
+  const matchers = pipe(opts.excludedPatterns?.map((pattern) => wcmatch(pattern)), O.fromNullable)
 
   function filterExcludedPattern(request: FastifyRequest) {
     return pipe(
@@ -528,5 +525,4 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
   })
 
   fastify.log.info(`Keycloak registered successfully!`)
-  return fastify
 })
