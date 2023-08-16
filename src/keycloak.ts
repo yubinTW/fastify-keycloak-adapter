@@ -376,7 +376,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
       request.log.debug('Keycloak adapter: The token has expired, refreshing token ...')
       updateToken(request, done)
     } else {
-      if (request.method === 'GET') {
+      if (request.method === 'GET' && !opts.unauthorizedHandler) {
         reply.redirect(`${opts.appOrigin}/connect/keycloak`)
       } else {
         unauthorizedHandler(request, reply)
