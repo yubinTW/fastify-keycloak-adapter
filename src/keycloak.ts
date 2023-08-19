@@ -15,8 +15,8 @@ import * as t from 'io-ts'
 import qs from 'qs'
 import wcmatch from 'wildcard-match'
 
-declare module 'fastify' {
-  interface Session {
+declare module '@fastify/session' {
+  interface FastifySessionObject {
     grant: GrantSession
     user: unknown
   }
@@ -436,7 +436,10 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     )
   }
 
-  const matchers = pipe(opts.excludedPatterns?.map((pattern) => wcmatch(pattern)), O.fromNullable)
+  const matchers = pipe(
+    opts.excludedPatterns?.map((pattern) => wcmatch(pattern)),
+    O.fromNullable
+  )
 
   function filterExcludedPattern(request: FastifyRequest) {
     return pipe(
