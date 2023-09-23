@@ -1,7 +1,7 @@
 import cookie from '@fastify/cookie'
 import jwt from '@fastify/jwt'
 import session from '@fastify/session'
-import axios, { AxiosError } from 'axios'
+import axios, { AxiosError, AxiosResponse } from 'axios'
 import axiosRetry from 'axios-retry'
 import { FastifyInstance, FastifyReply, FastifyRequest, HookHandlerDoneFunction } from 'fastify'
 import fastifyPlugin from 'fastify-plugin'
@@ -13,7 +13,7 @@ import * as TE from 'fp-ts/TaskEither'
 import grant, { GrantResponse, GrantSession } from 'grant'
 import * as t from 'io-ts'
 import qs from 'qs'
-import wcmatch from 'wildcard-match'
+import wcMatch from 'wildcard-match'
 
 declare module '@fastify/session' {
   interface FastifySessionObject {
@@ -52,7 +52,7 @@ const AppOriginCodec = new t.Type<string, string, unknown>(
     input.endsWith('/') === false
       ? t.success(input)
       : t.failure(input, context),
-  (a) => t.identity(a)
+  t.identity
 )
 
 const KeycloakSubdomainCodec = new t.Type<string, string, unknown>(
@@ -66,7 +66,7 @@ const KeycloakSubdomainCodec = new t.Type<string, string, unknown>(
     input.endsWith('/') === false
       ? t.success(input)
       : t.failure(input, context),
-  (a) => t.identity(a)
+  t.identity
 )
 
 const requiredOptions = t.type({
@@ -95,15 +95,16 @@ export type KeycloakOptions = t.TypeOf<typeof KeycloakOptions> & {
   unauthorizedHandler?: (request: FastifyRequest, reply: FastifyReply) => void
 }
 
-function getWellKnownConfiguration(url: string) {
-  return TE.tryCatch(
+const getWellKnownConfiguration: (url: string) => TE.TaskEither<AxiosError, AxiosResponse<WellKnownConfiguration>> = (
+  url: string
+) =>
+  TE.tryCatch(
     () => axios.get<WellKnownConfiguration>(url),
     (e) => e as AxiosError
   )
-}
 
-function validAppOrigin(opts: KeycloakOptions): E.Either<Error, KeycloakOptions> {
-  return pipe(
+const validAppOrigin: (opts: KeycloakOptions) => E.Either<Error, KeycloakOptions> = (opts) =>
+  pipe(
     opts.appOrigin,
     AppOriginCodec.decode,
     E.match(
@@ -111,10 +112,9 @@ function validAppOrigin(opts: KeycloakOptions): E.Either<Error, KeycloakOptions>
       () => E.right(opts)
     )
   )
-}
 
-function validKeycloakSubdomain(opts: KeycloakOptions): E.Either<Error, KeycloakOptions> {
-  return pipe(
+const validKeycloakSubdomain: (opts: KeycloakOptions) => E.Either<Error, KeycloakOptions> = (opts) =>
+  pipe(
     opts.keycloakSubdomain,
     KeycloakSubdomainCodec.decode,
     E.match(
@@ -122,7 +122,6 @@ function validKeycloakSubdomain(opts: KeycloakOptions): E.Either<Error, Keycloak
       () => E.right(opts)
     )
   )
-}
 
 export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOptions) => {
   axiosRetry(axios, {
@@ -203,12 +202,11 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     )
   )
 
-  function getRealmResponse(url: string) {
-    return TE.tryCatch(
+  const getRealmResponse: (url: string) => TE.TaskEither<Error, AxiosResponse<RealmResponse>> = (url) =>
+    TE.tryCatch(
       () => axios.get<RealmResponse>(url),
       (e) => new Error(`${e}`)
     )
-  }
 
   const secretPublicKey = await pipe(
     `${protocol}${opts.keycloakSubdomain}`,
@@ -228,7 +226,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
       (publicKey) => {
         fastify.register(jwt, {
           secret: {
-            private: 'dummyprivate',
+            private: 'dummyPrivate',
             public: publicKey
           },
           verify: { algorithms: ['RS256'] }
@@ -237,8 +235,8 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     )
   )
 
-  function getGrantFromSession(request: FastifyRequest): E.Either<Error, GrantSession> {
-    return pipe(
+  const getGrantFromSession: (request: FastifyRequest) => E.Either<Error, GrantSession> = (request) =>
+    pipe(
       request.session.grant,
       O.fromNullable,
       O.match(
@@ -246,61 +244,48 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
         () => E.right(request.session.grant)
       )
     )
-  }
 
-  function getResponseFromGrant(grant: GrantSession): E.Either<Error, GrantResponse> {
-    return pipe(
+  const getResponseFromGrant: (grant: GrantSession) => E.Either<Error, GrantResponse> = (grant) =>
+    pipe(
       grant.response,
       O.fromNullable,
-      O.match(
-        () => E.left(new Error(`response not found in grant`)),
-        (response) => E.right(response)
-      )
+      E.fromOption(() => new Error(`response not found in grant`))
     )
-  }
 
-  function getIdtokenFromResponse(response: GrantResponse): E.Either<Error, string> {
-    return pipe(
+  const getIdTokenFromResponse: (response: GrantResponse) => E.Either<Error, string> = (response) =>
+    pipe(
       response.id_token,
       O.fromNullable,
-      O.match(
-        () => E.left(new Error(`id_token not found in response with response: ${response}`)),
-        (id_token) => E.right(id_token)
-      )
+      E.fromOption(() => new Error(`id_token not found in response with response: ${response}`))
     )
-  }
 
-  function verifyIdtoken(idToken: string): E.Either<Error, string> {
-    return E.tryCatch(
+  const verifyIdToken: (idToken: string) => E.Either<Error, string> = (idToken) =>
+    E.tryCatch(
       () => fastify.jwt.verify(idToken),
       (e) => new Error(`Failed to verify id_token: ${(e as Error).message}`)
     )
-  }
 
-  function decodedTokenToJson(decodedToken: string): E.Either<Error, unknown> {
-    return E.tryCatch(
+  const decodedTokenToJson: (decodedToken: string) => E.Either<Error, unknown> = (decodedToken) =>
+    E.tryCatch(
       () => JSON.parse(JSON.stringify(decodedToken)),
       (e) => new Error(`Failed to parsing json from decodedToken: ${e}`)
     )
-  }
 
-  function authentication(request: FastifyRequest): E.Either<Error, unknown> {
-    return pipe(
+  const authentication: (request: FastifyRequest) => E.Either<Error, unknown> = (request) =>
+    pipe(
       getGrantFromSession(request),
       E.chain(getResponseFromGrant),
-      E.chain(getIdtokenFromResponse),
-      E.chain(verifyIdtoken),
+      E.chain(getIdTokenFromResponse),
+      E.chain(verifyIdToken),
       E.chain(decodedTokenToJson)
     )
-  }
 
-  function getBearerTokenFromRequest(request: FastifyRequest): O.Option<string> {
-    return pipe(
+  const getBearerTokenFromRequest: (request: FastifyRequest) => O.Option<string> = (request) =>
+    pipe(
       request.headers.authorization,
       O.fromNullable,
       O.map((str) => str.substring(7))
     )
-  }
 
   type RefreshTokenResponse = {
     access_token: string
@@ -313,7 +298,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     id_token: string
   }
 
-  async function getRefreshToken(request: FastifyRequest) {
+  const getRefreshToken: (request: FastifyRequest) => Promise<AxiosResponse<RefreshTokenResponse>> = (request) => {
     const refresh_token = request.session.grant.response?.refresh_token
     const postData = qs.stringify({
       client_id: opts.clientId,
@@ -324,18 +309,15 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     return axios.post<RefreshTokenResponse>(tokenEndpoint, postData)
   }
 
-  function verifyJwtToken(token: string): E.Either<Error, string> {
-    return E.tryCatch(
+  const verifyJwtToken: (token: string) => E.Either<Error, string> = (token) =>
+    E.tryCatch(
       () => fastify.jwt.verify(token),
       (e) => new Error(`Failed to verify token: ${(e as Error).message}`)
     )
-  }
 
   const grantRoutes = ['/connect/:provider', '/connect/:provider/:override']
 
-  function isGrantRoute(request: FastifyRequest): boolean {
-    return grantRoutes.includes(request.routerPath)
-  }
+  const isGrantRoute: (request: FastifyRequest) => boolean = (request) => grantRoutes.includes(request.routerPath)
 
   const userPayloadMapper = pipe(
     opts.userPayloadMapper,
@@ -436,13 +418,10 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     )
   }
 
-  const matchers = pipe(
-    opts.excludedPatterns?.map((pattern) => wcmatch(pattern)),
-    O.fromNullable
-  )
+  const matchers = pipe(opts.excludedPatterns?.map((pattern) => wcMatch(pattern)), O.fromNullable)
 
-  function filterExcludedPattern(request: FastifyRequest) {
-    return pipe(
+  const filterExcludedPattern: (request: FastifyRequest) => O.Option<FastifyRequest> = (request) =>
+    pipe(
       matchers,
       O.map((matchers) => matchers.filter((matcher) => matcher(request.url))),
       O.map((matchers) => matchers.length > 0),
@@ -458,14 +437,12 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
           )
       )
     )
-  }
 
-  function filterGrantRoute(request: FastifyRequest) {
-    return pipe(
+  const filterGrantRoute: (request: FastifyRequest) => O.Option<FastifyRequest> = (request) =>
+    pipe(
       request,
       O.fromPredicate((request) => !isGrantRoute(request))
     )
-  }
 
   fastify.addHook('preValidation', (request: FastifyRequest, reply: FastifyReply, done) => {
     pipe(
