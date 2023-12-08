@@ -3,6 +3,7 @@
   "author": "Yubin, Hsu",
   "version": "2.1.6",
   "main": "dist/keycloak",
+  "type": "module",
   "keywords": [
     "fastify",
     "keycloak",
@@ -33,30 +34,30 @@
   },
   "dependencies": {
     "@fastify/cookie": "^9.2.0",
-    "@fastify/jwt": "^7.2.3",
-    "@fastify/session": "^10.5.0",
+    "@fastify/jwt": "^7.2.4",
+    "@fastify/session": "^10.7.0",
     "axios": "^1.6.2",
-    "axios-retry": "^3.9.1",
+    "axios-retry": "^4.0.0",
     "fastify-plugin": "^4.5.1",
     "fp-ts": "^2.16.1",
     "grant": "^5.4.22",
-    "io-ts": "^2.2.20",
+    "io-ts": "^2.2.21",
     "qs": "^6.11.2",
     "wildcard-match": "^5.1.2"
   },
   "devDependencies": {
-    "@types/node": "^20.9.3",
+    "@types/node": "^20.10.4",
     "@types/qs": "^6.9.10",
-    "@typescript-eslint/eslint-plugin": "^6.12.0",
-    "@typescript-eslint/parser": "^6.12.0",
-    "@vitest/coverage-v8": "^0.34.6",
-    "@vitest/ui": "^0.34.6",
-    "eslint": "^8.54.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.2",
+    "@typescript-eslint/parser": "^6.13.2",
+    "@vitest/coverage-v8": "^1.0.2",
+    "@vitest/ui": "^1.0.2",
+    "eslint": "^8.55.0",
     "eslint-plugin-simple-import-sort": "^10.0.0",
     "fastify": "^4.24.3",
     "prettier": "^3.1.0",
     "testcontainers-keycloak": "^0.3.1",
-    "typescript": "^5.3.2",
-    "vitest": "^0.34.6"
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.2"
   }
 }
