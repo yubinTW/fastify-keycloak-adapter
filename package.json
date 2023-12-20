@@ -3,7 +3,6 @@
   "author": "Yubin, Hsu",
   "version": "2.1.7",
   "main": "dist/keycloak",
-  "type": "module",
   "keywords": [
     "fastify",
     "keycloak",
