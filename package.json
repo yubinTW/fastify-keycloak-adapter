@@ -1,7 +1,7 @@
 {
   "name": "fastify-keycloak-adapter",
   "author": "Yubin, Hsu",
-  "version": "2.1.8",
+  "version": "2.1.9",
   "main": "dist/keycloak",
   "keywords": [
     "fastify",
