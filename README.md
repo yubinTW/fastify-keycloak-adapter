@@ -173,6 +173,21 @@ server.get('/users/me', async (request, reply) => {
 })
 ```
 
+## Get OpenID Connect (OIDC) tokens
+
+in some case, you may want to handle the id_token (or access_token, refresh_token) by yourself
+
+use `request,session.grant` can get the [GrantResponse](https://github.com/simov/grant/blob/5f60a595161aa96cd110192bc810eb8fa478da21/grant.d.ts#L318) object
+
+```typescript
+const id_token = request.session.grant.response?.id_token
+console.log('id_token', id_token)
+const access_token = request.session.grant.response?.access_token
+console.log('access_token', access_token)
+const refresh_token = request.session.grant.response?.refresh_token
+console.log('refresh_token', refresh_token)
+```
+
 # License
 
 [MIT License](LICENSE)
