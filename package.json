@@ -34,7 +34,7 @@
   "dependencies": {
     "@fastify/cookie": "^9.3.1",
     "@fastify/jwt": "^7.2.4",
-    "@fastify/session": "^10.7.0",
+    "@fastify/session": "^10.9.0",
     "axios": "^1.6.5",
     "axios-retry": "^4.0.0",
     "fastify-plugin": "^4.5.1",
