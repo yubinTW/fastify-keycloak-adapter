@@ -49,14 +49,13 @@
     "@types/qs": "^6.9.11",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
-    "@vitest/coverage-v8": "^1.2.1",
-    "@vitest/ui": "^1.2.1",
+    "@vitest/coverage-v8": "^2.0.5",
     "eslint": "^8.56.0",
     "eslint-plugin-simple-import-sort": "^10.0.0",
     "fastify": "^4.25.2",
     "prettier": "^3.2.4",
     "testcontainers-keycloak": "^0.3.1",
     "typescript": "^5.3.3",
-    "vitest": "^1.2.1"
+    "vitest": "^2.0.5"
   }
 }
