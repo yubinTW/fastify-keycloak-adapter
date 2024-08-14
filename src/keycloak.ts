@@ -317,7 +317,7 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
 
   const grantRoutes = ['/connect/:provider', '/connect/:provider/:override']
 
-  const isGrantRoute: (request: FastifyRequest) => boolean = (request) => grantRoutes.includes(request.routeOptions.url)
+  const isGrantRoute: (request: FastifyRequest) => boolean = (request) => grantRoutes.includes(request.routeConfig.url)
 
   const userPayloadMapper = pipe(
     opts.userPayloadMapper,
@@ -418,7 +418,10 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
     )
   }
 
-  const matchers = pipe(opts.excludedPatterns?.map((pattern) => wcMatch(pattern)), O.fromNullable)
+  const matchers = pipe(
+    opts.excludedPatterns?.map((pattern) => wcMatch(pattern)),
+    O.fromNullable
+  )
 
   const filterExcludedPattern: (request: FastifyRequest) => O.Option<FastifyRequest> = (request) =>
     pipe(
