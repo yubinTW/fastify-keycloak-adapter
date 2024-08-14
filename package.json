@@ -35,8 +35,8 @@
     "@fastify/cookie": "^9.3.1",
     "@fastify/jwt": "^7.2.4",
     "@fastify/session": "^10.9.0",
-    "axios": "^1.6.5",
-    "axios-retry": "^4.0.0",
+    "axios": "^1.7.4",
+    "axios-retry": "^4.5.0",
     "fastify-plugin": "^4.5.1",
     "fp-ts": "^2.16.2",
     "grant": "^5.4.22",
@@ -54,7 +54,7 @@
     "eslint-plugin-simple-import-sort": "^10.0.0",
     "fastify": "^4.25.2",
     "prettier": "^3.2.4",
-    "testcontainers-keycloak": "^0.3.1",
+    "testcontainers-keycloak": "^0.4.1",
     "typescript": "^5.3.3",
     "vitest": "^2.0.5"
   }
