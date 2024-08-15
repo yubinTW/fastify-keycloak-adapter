@@ -1,7 +1,7 @@
 {
   "name": "fastify-keycloak-adapter",
   "author": "Yubin, Hsu",
-  "version": "2.1.11",
+  "version": "2.1.12",
   "main": "dist/keycloak",
   "keywords": [
     "fastify",
@@ -26,7 +26,6 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run --coverage",
-    "test:ui": "vitest --ui",
     "fix-prettier": "prettier --write \"{src,test}/**/*.{ts,json}\"",
     "check-lint": "eslint --color package.json \"{src,test}/**/*.ts\"",
     "fix-lint": "eslint --fix \"{src,test}/**/*.ts\""
