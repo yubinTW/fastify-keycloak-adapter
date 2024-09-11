@@ -9,6 +9,7 @@ import * as B from 'fp-ts/boolean'
 import * as E from 'fp-ts/Either'
 import { pipe } from 'fp-ts/function'
 import * as O from 'fp-ts/Option'
+import * as TO from 'fp-ts/TaskOption'
 import * as TE from 'fp-ts/TaskEither'
 import grant, { GrantResponse, GrantSession } from 'grant'
 import * as t from 'io-ts'
@@ -93,6 +94,7 @@ const KeycloakOptions = t.intersection([requiredOptions, partialOptions])
 export type KeycloakOptions = t.TypeOf<typeof KeycloakOptions> & {
   userPayloadMapper?: (tokenPayload: unknown) => object
   unauthorizedHandler?: (request: FastifyRequest, reply: FastifyReply) => void
+  bypassFn?: (request: FastifyRequest) => boolean | Promise<boolean>
 }
 
 const getWellKnownConfiguration: (url: string) => TE.TaskEither<AxiosError, AxiosResponse<WellKnownConfiguration>> = (
@@ -441,6 +443,17 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
       )
     )
 
+  const bypassFn = (request: FastifyRequest): TO.TaskOption<FastifyRequest> =>
+    pipe(
+      TO.tryCatch(async () => await opts.bypassFn?.(request)),
+      TO.chain((result) =>
+        pipe(
+          O.fromNullable(result === true ? null : request),
+          TO.fromOption
+        )
+      )
+    );
+
   const filterGrantRoute: (request: FastifyRequest) => O.Option<FastifyRequest> = (request) =>
     pipe(
       request,
@@ -450,23 +463,32 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
   fastify.addHook('preValidation', (request: FastifyRequest, reply: FastifyReply, done) => {
     pipe(
       request,
-      filterGrantRoute,
-      O.chain(filterExcludedPattern),
-      O.match(
+      bypassFn,
+      TO.match(
         () => {
           done()
         },
-        (request) =>
-          pipe(
-            request,
-            getBearerTokenFromRequest,
-            O.match(
-              () => authenticationByGrant(request, reply, done),
-              (bearerToken) => authenticationByToken(request, reply, bearerToken, done)
-            )
+        (request) => pipe(
+          request,
+          filterGrantRoute,
+          O.chain(filterExcludedPattern),
+          O.match(
+            () => {
+              done()
+            },
+            (request) =>
+              pipe(
+                request,
+                getBearerTokenFromRequest,
+                O.match(
+                  () => authenticationByGrant(request, reply, done),
+                  (bearerToken) => authenticationByToken(request, reply, bearerToken, done)
+                )
+              )
           )
+        )
       )
-    )
+    )()
   })
 
   function logout(request: FastifyRequest, reply: FastifyReply) {
