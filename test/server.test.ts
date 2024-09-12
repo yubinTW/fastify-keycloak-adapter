@@ -1,4 +1,4 @@
-import { FastifyInstance } from 'fastify'
+import { FastifyInstance, FastifyRequest } from 'fastify'
 import { KeycloakContainer, StartedKeycloakContainer } from 'testcontainers-keycloak'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -165,6 +165,99 @@ describe('server with keycloak testing', () => {
       })
       expect(response.statusCode).toBe(403)
       expect(response.body).toBe('Forbidden')
+    })
+  })
+
+  describe('add bypassFn configuration', () => {
+    const server: FastifyInstance = serverOf()
+
+    const bypassFn = (request: FastifyRequest) => {
+      return request.headers.password === 'sesame'
+    }
+
+    beforeAll(async () => {
+      await serverStart(server, serverPort, {
+        ...keycloakOptions,
+        bypassFn,
+      })
+      await server.ready()
+    })
+
+    afterAll(async () => {
+      await server.close()
+    })
+
+    it('should return 200, cause bypassFn returned true', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/ping',
+        headers: {
+          authorization: `Bearer fakeToken`,
+          password: 'sesame'
+        }
+      })
+      expect(response.statusCode).toBe(200)
+    })
+
+    it('should return 401, cause bypassFn returned false', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/ping',
+        headers: {
+          authorization: `Bearer fakeToken`,
+          password: 'mellon'
+        }
+      })
+      expect(response.statusCode).toBe(401)
+      expect(response.body).toBe('Unauthorized')
+    })
+  })
+
+
+  describe('add async bypassFn configuration', () => {
+    const server: FastifyInstance = serverOf()
+
+    const bypassFn = (request: FastifyRequest) => new Promise<boolean>((resolve) => {
+      setTimeout(() => {
+        resolve(request.headers.password === 'sesame')
+      }, 100)
+    })
+
+    beforeAll(async () => {
+      await serverStart(server, serverPort, {
+        ...keycloakOptions,
+        bypassFn,
+      })
+      await server.ready()
+    })
+
+    afterAll(async () => {
+      await server.close()
+    })
+
+    it('should return 200, cause bypassFn returned true', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/ping',
+        headers: {
+          authorization: `Bearer fakeToken`,
+          password: 'sesame'
+        }
+      })
+      expect(response.statusCode).toBe(200)
+    })
+
+    it('should return 401, cause bypassFn returned false', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/ping',
+        headers: {
+          authorization: `Bearer fakeToken`,
+          password: 'mellon'
+        }
+      })
+      expect(response.statusCode).toBe(401)
+      expect(response.body).toBe('Unauthorized')
     })
   })
 })

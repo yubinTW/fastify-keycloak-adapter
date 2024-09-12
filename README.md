@@ -72,6 +72,8 @@ server.register(keycloak, opts)
 
 - `unauthorizedHandler(request, reply)` is a function to customize the handling (e.g. the response) of unauthorized requests (optional)
 
+- `bypassFn(request)` is a function that returns true if you want to stop the normal authentication workflow and allow the request. It will prevent `userPayloadMapper` from being called and `fastify.session.user` from being generated.
+
 ## Configuration example
 
 ```typescript
@@ -131,6 +133,24 @@ const unauthorizedHandler = (request: FastifyRequest, reply: FastifyReply) => {
 const opts: KeycloakOptions = {
   // ...
   unauthorizedHandler: unauthorizedHandler
+}
+```
+
+## Set bypassFn
+
+Provides a function that returns true if you want to stop the normal authentication workflow and allow the request.
+
+```typescript
+import { FastifyReply, FastifyRequest } from 'fastify'
+import { KeycloakOptions } from 'fastify-keycloak-adapter'
+
+const bypassFn = (request: FastifyRequest) => {
+  return Math.random() * 6 < 1 // russian roulette of security DO NOT USE IT !
+}
+
+const opts: KeycloakOptions = {
+  // ...
+  bypassFn: bypassFn
 }
 ```
 
