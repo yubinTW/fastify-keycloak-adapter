@@ -7,13 +7,13 @@
 
 ## Install
 
-https://www.npmjs.com/package/fastify-keycloak-adapter
+<https://www.npmjs.com/package/fastify-keycloak-adapter>
 
-```
+```bash
 npm i fastify-keycloak-adapter
 ```
 
-```
+```bash
 yarn add fastify-keycloak-adapter
 ```
 
@@ -211,6 +211,6 @@ const refresh_token = request.session.grant.response?.refresh_token
 console.log('refresh_token', refresh_token)
 ```
 
-# License
+## License
 
 [MIT License](LICENSE)
