@@ -9,8 +9,8 @@ import * as B from 'fp-ts/boolean'
 import * as E from 'fp-ts/Either'
 import { pipe } from 'fp-ts/function'
 import * as O from 'fp-ts/Option'
-import * as TO from 'fp-ts/TaskOption'
 import * as TE from 'fp-ts/TaskEither'
+import * as TO from 'fp-ts/TaskOption'
 import grant, { GrantResponse, GrantSession } from 'grant'
 import * as t from 'io-ts'
 import qs from 'qs'
@@ -86,7 +86,8 @@ const partialOptions = t.partial({
   disableCookiePlugin: t.readonly(t.boolean),
   disableSessionPlugin: t.readonly(t.boolean),
   retries: t.readonly(t.number),
-  autoRefreshToken: t.readonly(t.boolean)
+  autoRefreshToken: t.readonly(t.boolean),
+  usePostLogoutRedirect: t.readonly(t.boolean)
 })
 
 const KeycloakOptions = t.intersection([requiredOptions, partialOptions])
@@ -446,13 +447,8 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
   const bypassFn = (request: FastifyRequest): TO.TaskOption<FastifyRequest> =>
     pipe(
       TO.tryCatch(async () => await opts.bypassFn?.(request)),
-      TO.chain((result) =>
-        pipe(
-          O.fromNullable(result === true ? null : request),
-          TO.fromOption
-        )
-      )
-    );
+      TO.chain((result) => pipe(O.fromNullable(result === true ? null : request), TO.fromOption))
+    )
 
   const filterGrantRoute: (request: FastifyRequest) => O.Option<FastifyRequest> = (request) =>
     pipe(
@@ -468,30 +464,42 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
         () => {
           done()
         },
-        (request) => pipe(
-          request,
-          filterGrantRoute,
-          O.chain(filterExcludedPattern),
-          O.match(
-            () => {
-              done()
-            },
-            (request) =>
-              pipe(
-                request,
-                getBearerTokenFromRequest,
-                O.match(
-                  () => authenticationByGrant(request, reply, done),
-                  (bearerToken) => authenticationByToken(request, reply, bearerToken, done)
+        (request) =>
+          pipe(
+            request,
+            filterGrantRoute,
+            O.chain(filterExcludedPattern),
+            O.match(
+              () => {
+                done()
+              },
+              (request) =>
+                pipe(
+                  request,
+                  getBearerTokenFromRequest,
+                  O.match(
+                    () => authenticationByGrant(request, reply, done),
+                    (bearerToken) => authenticationByToken(request, reply, bearerToken, done)
+                  )
                 )
-              )
+            )
           )
-        )
       )
     )()
   })
 
+  const getLogoutUrl = (config: WellKnownConfiguration) => (idToken: string) =>
+    pipe(
+      Boolean(opts.usePostLogoutRedirect),
+      B.match(
+        () => `${config.end_session_endpoint}?redirect_uri=${opts.appOrigin}`,
+        () => `${config.end_session_endpoint}?id_token_hint=${idToken}&post_logout_redirect_uri=${opts.appOrigin}`
+      )
+    )
+
   function logout(request: FastifyRequest, reply: FastifyReply) {
+    const idToken = request.session.grant.response?.id_token ?? ''
+
     request.session.destroy((error) => {
       pipe(
         error,
@@ -500,7 +508,9 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
           () => {
             pipe(
               keycloakConfiguration,
-              E.map((config) => reply.redirect(`${config.end_session_endpoint}?redirect_uri=${opts.appOrigin}`))
+              E.map((config) => {
+                reply.redirect(getLogoutUrl(config)(idToken))
+              })
             )
           },
           (e) => {

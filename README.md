@@ -74,6 +74,8 @@ server.register(keycloak, opts)
 
 - `bypassFn(request)` is a function that returns true if you want to stop the normal authentication workflow and allow the request. It will prevent `userPayloadMapper` from being called and `fastify.session.user` from being generated.
 
+- `usePostLogoutRedirect` set true to enable compatibility with Keycloak versions 18.0.0 and later, where `post_logout_redirect_uri` and `id_token_hint` are used instead of `redirect_uri` during logout. When set to false, the plugin will default to using the old `redirect_uri` for backward compatibility. (optional, defaults to `false`)
+
 ## Configuration example
 
 ```typescript
@@ -86,6 +88,7 @@ const opts: KeycloakOptions = {
   appOrigin: 'http://localhost:8888',
   keycloakSubdomain: 'keycloak.mycompany.com/auth/realms/myrealm',
   useHttps: false,
+  usePostLogoutRedirect: false,
   clientId: 'myclient01',
   clientSecret: 'myClientSecret',
   logoutEndpoint: '/logout',
