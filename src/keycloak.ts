@@ -320,7 +320,8 @@ export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOpti
 
   const grantRoutes = ['/connect/:provider', '/connect/:provider/:override']
 
-  const isGrantRoute: (request: FastifyRequest) => boolean = (request) => grantRoutes.includes(request.routeConfig.url)
+  const isGrantRoute: (request: FastifyRequest) => boolean = (request) =>
+    grantRoutes.includes(request.routeOptions.config.url)
 
   const userPayloadMapper = pipe(
     opts.userPayloadMapper,
