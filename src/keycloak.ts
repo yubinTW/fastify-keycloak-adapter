@@ -126,419 +126,425 @@ const validKeycloakSubdomain: (opts: KeycloakOptions) => E.Either<Error, Keycloa
     )
   )
 
-export default fastifyPlugin(async (fastify: FastifyInstance, opts: KeycloakOptions) => {
-  axiosRetry(axios, {
-    retries: opts.retries ? opts.retries : 3,
-    retryDelay: axiosRetry.exponentialDelay,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    onRetry: (retryCount, error, _requestConfig) => {
-      fastify.log.error(`Retry #${retryCount} ${error.message}`)
-    }
-  })
-
-  pipe(
-    opts,
-    validAppOrigin,
-    E.chain(validKeycloakSubdomain),
-    E.match(
-      (e) => {
-        fastify.log.error(`${e}`)
-        throw new Error(e.message)
-      },
-      () => {
-        fastify.log.debug(`Keycloak Options valid successfully. Keycloak options: ${JSON.stringify(opts)}`)
+export default fastifyPlugin(
+  async (fastify: FastifyInstance, opts: KeycloakOptions) => {
+    axiosRetry(axios, {
+      retries: opts.retries ? opts.retries : 3,
+      retryDelay: axiosRetry.exponentialDelay,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      onRetry: (retryCount, error, _requestConfig) => {
+        fastify.log.error(`Retry #${retryCount} ${error.message}`)
       }
-    )
-  )
+    })
 
-  const protocol = opts.useHttps ? 'https://' : 'http://'
-
-  const keycloakConfiguration = await pipe(
-    `${protocol}${opts.keycloakSubdomain}/.well-known/openid-configuration`,
-    getWellKnownConfiguration,
-    TE.map((response) => response.data)
-  )()
-
-  function registerDependentPlugin(config: WellKnownConfiguration) {
-    if (!opts.disableCookiePlugin) {
-      fastify.register(cookie)
-    }
-
-    if (!opts.disableSessionPlugin) {
-      fastify.register(session, {
-        secret: new Array(32).fill('a').join(''),
-        cookie: { secure: false }
-      })
-    }
-
-    tokenEndpoint = config.token_endpoint
-
-    fastify.register(
-      grant.fastify()({
-        defaults: {
-          origin: opts.appOrigin,
-          transport: 'session'
+    pipe(
+      opts,
+      validAppOrigin,
+      E.chain(validKeycloakSubdomain),
+      E.match(
+        (e) => {
+          fastify.log.error(`${e}`)
+          throw new Error(e.message)
         },
-        keycloak: {
-          key: opts.clientId,
-          secret: opts.clientSecret,
-          oauth: 2,
-          authorize_url: config.authorization_endpoint,
-          access_url: config.token_endpoint,
-          callback: opts.callback ?? '/',
-          scope: opts.scope ?? ['openid'],
-          nonce: true
+        () => {
+          fastify.log.debug(`Keycloak Options valid successfully. Keycloak options: ${JSON.stringify(opts)}`)
         }
-      })
+      )
     )
-  }
 
-  pipe(
-    keycloakConfiguration,
-    E.match(
-      (error) => {
-        throw new Error(`Failed to get openid-configuration: ${JSON.stringify(error.toJSON())}`)
-      },
-      (config) => {
-        registerDependentPlugin(config)
+    const protocol = opts.useHttps ? 'https://' : 'http://'
+
+    const keycloakConfiguration = await pipe(
+      `${protocol}${opts.keycloakSubdomain}/.well-known/openid-configuration`,
+      getWellKnownConfiguration,
+      TE.map((response) => response.data)
+    )()
+
+    function registerDependentPlugin(config: WellKnownConfiguration) {
+      if (!opts.disableCookiePlugin) {
+        fastify.register(cookie)
       }
-    )
-  )
 
-  const getRealmResponse: (url: string) => TE.TaskEither<Error, AxiosResponse<RealmResponse>> = (url) =>
-    TE.tryCatch(
-      () => axios.get<RealmResponse>(url),
-      (e) => new Error(`${e}`)
-    )
-
-  const secretPublicKey = await pipe(
-    `${protocol}${opts.keycloakSubdomain}`,
-    getRealmResponse,
-    TE.map((response) => response.data),
-    TE.map((realmResponse) => realmResponse.public_key),
-    TE.map((publicKey) => `-----BEGIN PUBLIC KEY-----\n${publicKey}\n-----END PUBLIC KEY-----`)
-  )()
-
-  pipe(
-    secretPublicKey,
-    E.match(
-      (e) => {
-        fastify.log.fatal(`Failed to get public key: ${e}`)
-        throw new Error(`Failed to get public key: ${e}`)
-      },
-      (publicKey) => {
-        fastify.register(jwt, {
-          secret: {
-            private: 'dummyPrivate',
-            public: publicKey
-          },
-          verify: { algorithms: ['RS256'] }
+      if (!opts.disableSessionPlugin) {
+        fastify.register(session, {
+          secret: new Array(32).fill('a').join(''),
+          cookie: { secure: false }
         })
       }
-    )
-  )
 
-  const getGrantFromSession: (request: FastifyRequest) => E.Either<Error, GrantSession> = (request) =>
+      tokenEndpoint = config.token_endpoint
+
+      fastify.register(
+        grant.fastify()({
+          defaults: {
+            origin: opts.appOrigin,
+            transport: 'session'
+          },
+          keycloak: {
+            key: opts.clientId,
+            secret: opts.clientSecret,
+            oauth: 2,
+            authorize_url: config.authorization_endpoint,
+            access_url: config.token_endpoint,
+            callback: opts.callback ?? '/',
+            scope: opts.scope ?? ['openid'],
+            nonce: true
+          }
+        })
+      )
+    }
+
     pipe(
-      request.session.grant,
-      O.fromNullable,
-      O.match(
-        () => E.left(new Error(`grant not found in session`)),
-        () => E.right(request.session.grant)
+      keycloakConfiguration,
+      E.match(
+        (error) => {
+          throw new Error(`Failed to get openid-configuration: ${JSON.stringify(error.toJSON())}`)
+        },
+        (config) => {
+          registerDependentPlugin(config)
+        }
       )
     )
 
-  const getResponseFromGrant: (grant: GrantSession) => E.Either<Error, GrantResponse> = (grant) =>
+    const getRealmResponse: (url: string) => TE.TaskEither<Error, AxiosResponse<RealmResponse>> = (url) =>
+      TE.tryCatch(
+        () => axios.get<RealmResponse>(url),
+        (e) => new Error(`${e}`)
+      )
+
+    const secretPublicKey = await pipe(
+      `${protocol}${opts.keycloakSubdomain}`,
+      getRealmResponse,
+      TE.map((response) => response.data),
+      TE.map((realmResponse) => realmResponse.public_key),
+      TE.map((publicKey) => `-----BEGIN PUBLIC KEY-----\n${publicKey}\n-----END PUBLIC KEY-----`)
+    )()
+
     pipe(
-      grant.response,
-      O.fromNullable,
-      E.fromOption(() => new Error(`response not found in grant`))
+      secretPublicKey,
+      E.match(
+        (e) => {
+          fastify.log.fatal(`Failed to get public key: ${e}`)
+          throw new Error(`Failed to get public key: ${e}`)
+        },
+        (publicKey) => {
+          fastify.register(jwt, {
+            secret: {
+              private: 'dummyPrivate',
+              public: publicKey
+            },
+            verify: { algorithms: ['RS256'] }
+          })
+        }
+      )
     )
 
-  const getIdTokenFromResponse: (response: GrantResponse) => E.Either<Error, string> = (response) =>
-    pipe(
-      response.id_token,
-      O.fromNullable,
-      E.fromOption(() => new Error(`id_token not found in response with response: ${response}`))
-    )
+    const getGrantFromSession: (request: FastifyRequest) => E.Either<Error, GrantSession> = (request) =>
+      pipe(
+        request.session.grant,
+        O.fromNullable,
+        O.match(
+          () => E.left(new Error(`grant not found in session`)),
+          () => E.right(request.session.grant)
+        )
+      )
 
-  const verifyIdToken: (idToken: string) => E.Either<Error, string> = (idToken) =>
-    E.tryCatch(
-      () => fastify.jwt.verify(idToken),
-      (e) => new Error(`Failed to verify id_token: ${(e as Error).message}`)
-    )
+    const getResponseFromGrant: (grant: GrantSession) => E.Either<Error, GrantResponse> = (grant) =>
+      pipe(
+        grant.response,
+        O.fromNullable,
+        E.fromOption(() => new Error(`response not found in grant`))
+      )
 
-  const decodedTokenToJson: (decodedToken: string) => E.Either<Error, unknown> = (decodedToken) =>
-    E.tryCatch(
-      () => JSON.parse(JSON.stringify(decodedToken)),
-      (e) => new Error(`Failed to parsing json from decodedToken: ${e}`)
-    )
+    const getIdTokenFromResponse: (response: GrantResponse) => E.Either<Error, string> = (response) =>
+      pipe(
+        response.id_token,
+        O.fromNullable,
+        E.fromOption(() => new Error(`id_token not found in response with response: ${response}`))
+      )
 
-  const authentication: (request: FastifyRequest) => E.Either<Error, unknown> = (request) =>
-    pipe(
-      getGrantFromSession(request),
-      E.chain(getResponseFromGrant),
-      E.chain(getIdTokenFromResponse),
-      E.chain(verifyIdToken),
-      E.chain(decodedTokenToJson)
-    )
+    const verifyIdToken: (idToken: string) => E.Either<Error, string> = (idToken) =>
+      E.tryCatch(
+        () => fastify.jwt.verify(idToken),
+        (e) => new Error(`Failed to verify id_token: ${(e as Error).message}`)
+      )
 
-  const getBearerTokenFromRequest: (request: FastifyRequest) => O.Option<string> = (request) =>
-    pipe(
-      request.headers.authorization,
-      O.fromNullable,
-      O.map((str) => str.substring(7))
-    )
+    const decodedTokenToJson: (decodedToken: string) => E.Either<Error, unknown> = (decodedToken) =>
+      E.tryCatch(
+        () => JSON.parse(JSON.stringify(decodedToken)),
+        (e) => new Error(`Failed to parsing json from decodedToken: ${e}`)
+      )
 
-  type RefreshTokenResponse = {
-    access_token: string
-    expires_in: number
-    refresh_expires_in: number
-    refresh_token: string
-    token_type: 'Bearer'
-    session_state: string
-    scope: string
-    id_token: string
-  }
+    const authentication: (request: FastifyRequest) => E.Either<Error, unknown> = (request) =>
+      pipe(
+        getGrantFromSession(request),
+        E.chain(getResponseFromGrant),
+        E.chain(getIdTokenFromResponse),
+        E.chain(verifyIdToken),
+        E.chain(decodedTokenToJson)
+      )
 
-  const getRefreshToken: (request: FastifyRequest) => Promise<AxiosResponse<RefreshTokenResponse>> = (request) => {
-    const refresh_token = request.session.grant.response?.refresh_token
-    const postData = qs.stringify({
-      client_id: opts.clientId,
-      client_secret: opts.clientSecret,
-      grant_type: 'refresh_token',
-      refresh_token
-    })
-    return axios.post<RefreshTokenResponse>(tokenEndpoint, postData)
-  }
+    const getBearerTokenFromRequest: (request: FastifyRequest) => O.Option<string> = (request) =>
+      pipe(
+        request.headers.authorization,
+        O.fromNullable,
+        O.map((str) => str.substring(7))
+      )
 
-  const verifyJwtToken: (token: string) => E.Either<Error, string> = (token) =>
-    E.tryCatch(
-      () => fastify.jwt.verify(token),
-      (e) => new Error(`Failed to verify token: ${(e as Error).message}`)
-    )
+    type RefreshTokenResponse = {
+      access_token: string
+      expires_in: number
+      refresh_expires_in: number
+      refresh_token: string
+      token_type: 'Bearer'
+      session_state: string
+      scope: string
+      id_token: string
+    }
 
-  const grantRoutes = ['/connect/:provider', '/connect/:provider/:override']
-
-  const isGrantRoute: (request: FastifyRequest) => boolean = (request) =>
-    grantRoutes.includes(request.routeOptions.config.url)
-
-  const userPayloadMapper = pipe(
-    opts.userPayloadMapper,
-    O.fromNullable,
-    O.match(
-      () => (tokenPayload: unknown) => ({
-        account: (tokenPayload as DefaultToken).preferred_username,
-        name: (tokenPayload as DefaultToken).name
-      }),
-      (a) => a
-    )
-  )
-
-  function updateToken(request: FastifyRequest, done: HookHandlerDoneFunction) {
-    getRefreshToken(request)
-      .then((response) => response.data)
-      .then((response) => {
-        request.session.grant.response!.refresh_token = response.refresh_token
-        request.session.grant.response!.access_token = response.access_token
-        request.session.grant.response!.id_token = response.id_token
-        request.log.debug('Keycloak adapter: Refresh token done.')
-        done()
+    const getRefreshToken: (request: FastifyRequest) => Promise<AxiosResponse<RefreshTokenResponse>> = (request) => {
+      const refresh_token = request.session.grant.response?.refresh_token
+      const postData = qs.stringify({
+        client_id: opts.clientId,
+        client_secret: opts.clientSecret,
+        grant_type: 'refresh_token',
+        refresh_token
       })
-      .catch((error) => {
-        request.log.error(`Failed to refresh token: ${error}`)
-        done()
-      })
-  }
+      return axios.post<RefreshTokenResponse>(tokenEndpoint, postData)
+    }
 
-  function authenticationErrorHandler(
-    e: Error,
-    request: FastifyRequest,
-    reply: FastifyReply,
-    done: HookHandlerDoneFunction
-  ) {
-    request.log.debug(`Keycloak adapter: ${e.message}`)
-    if (opts.autoRefreshToken && e.message.includes('The token has expired')) {
-      request.log.debug('Keycloak adapter: The token has expired, refreshing token ...')
-      updateToken(request, done)
-    } else {
-      if (request.method === 'GET' && !opts.unauthorizedHandler) {
-        reply.redirect(`${opts.appOrigin}/connect/keycloak`)
+    const verifyJwtToken: (token: string) => E.Either<Error, string> = (token) =>
+      E.tryCatch(
+        () => fastify.jwt.verify(token),
+        (e) => new Error(`Failed to verify token: ${(e as Error).message}`)
+      )
+
+    const grantRoutes = ['/connect/:provider', '/connect/:provider/:override']
+
+    const isGrantRoute: (request: FastifyRequest) => boolean = (request) =>
+      grantRoutes.includes(request.routeOptions.config.url)
+
+    const userPayloadMapper = pipe(
+      opts.userPayloadMapper,
+      O.fromNullable,
+      O.match(
+        () => (tokenPayload: unknown) => ({
+          account: (tokenPayload as DefaultToken).preferred_username,
+          name: (tokenPayload as DefaultToken).name
+        }),
+        (a) => a
+      )
+    )
+
+    function updateToken(request: FastifyRequest, done: HookHandlerDoneFunction) {
+      getRefreshToken(request)
+        .then((response) => response.data)
+        .then((response) => {
+          request.session.grant.response!.refresh_token = response.refresh_token
+          request.session.grant.response!.access_token = response.access_token
+          request.session.grant.response!.id_token = response.id_token
+          request.log.debug('Keycloak adapter: Refresh token done.')
+          done()
+        })
+        .catch((error) => {
+          request.log.error(`Failed to refresh token: ${error}`)
+          done()
+        })
+    }
+
+    function authenticationErrorHandler(
+      e: Error,
+      request: FastifyRequest,
+      reply: FastifyReply,
+      done: HookHandlerDoneFunction
+    ) {
+      request.log.debug(`Keycloak adapter: ${e.message}`)
+      if (opts.autoRefreshToken && e.message.includes('The token has expired')) {
+        request.log.debug('Keycloak adapter: The token has expired, refreshing token ...')
+        updateToken(request, done)
       } else {
-        unauthorizedHandler(request, reply)
+        if (request.method === 'GET' && !opts.unauthorizedHandler) {
+          reply.redirect(`${opts.appOrigin}/connect/keycloak`)
+        } else {
+          unauthorizedHandler(request, reply)
+        }
       }
     }
-  }
 
-  function authenticationByGrant(request: FastifyRequest, reply: FastifyReply, done: HookHandlerDoneFunction) {
-    pipe(
-      authentication(request),
-      E.fold(
-        (e) => {
-          authenticationErrorHandler(e, request, reply, done)
-        },
-        (decodedJson) => {
-          request.session.user = userPayloadMapper(decodedJson as DefaultToken)
-          request.log.debug(`${JSON.stringify(request.session.user)}`)
-          done()
-        }
-      )
-    )
-  }
-
-  const unauthorizedHandler = pipe(
-    opts.unauthorizedHandler,
-    O.fromNullable,
-    O.match(
-      () => (_request: FastifyRequest, reply: FastifyReply) => {
-        reply.status(401).send(`Unauthorized`)
-      },
-      (a) => a
-    )
-  )
-
-  function authenticationByToken(
-    request: FastifyRequest,
-    reply: FastifyReply,
-    bearerToken: string,
-    done: HookHandlerDoneFunction
-  ) {
-    pipe(
-      bearerToken,
-      verifyJwtToken,
-      E.chain(decodedTokenToJson),
-      E.fold(
-        (e) => {
-          request.log.debug(`Keycloak adapter: ${e.message}`)
-          unauthorizedHandler(request, reply)
-          done()
-        },
-        (decodedJson) => {
-          request.session.user = userPayloadMapper(decodedJson as DefaultToken)
-          request.log.debug(`${JSON.stringify(request.session.user)}`)
-          done()
-        }
-      )
-    )
-  }
-
-  const matchers = pipe(
-    opts.excludedPatterns?.map((pattern) => wcMatch(pattern)),
-    O.fromNullable
-  )
-
-  const filterExcludedPattern: (request: FastifyRequest) => O.Option<FastifyRequest> = (request) =>
-    pipe(
-      matchers,
-      O.map((matchers) => matchers.filter((matcher) => matcher(request.url))),
-      O.map((matchers) => matchers.length > 0),
-      O.match(
-        () => O.of(request),
-        (b) =>
-          pipe(
-            b,
-            B.match(
-              () => O.of(request),
-              () => O.none
-            )
-          )
-      )
-    )
-
-  const bypassFn = (request: FastifyRequest): TO.TaskOption<FastifyRequest> =>
-    pipe(
-      TO.tryCatch(async () => await opts.bypassFn?.(request)),
-      TO.chain((result) => pipe(O.fromNullable(result === true ? null : request), TO.fromOption))
-    )
-
-  const filterGrantRoute: (request: FastifyRequest) => O.Option<FastifyRequest> = (request) =>
-    pipe(
-      request,
-      O.fromPredicate((request) => !isGrantRoute(request))
-    )
-
-  fastify.addHook('preValidation', (request: FastifyRequest, reply: FastifyReply, done) => {
-    pipe(
-      request,
-      bypassFn,
-      TO.match(
-        () => {
-          done()
-        },
-        (request) =>
-          pipe(
-            request,
-            filterGrantRoute,
-            O.chain(filterExcludedPattern),
-            O.match(
-              () => {
-                done()
-              },
-              (request) =>
-                pipe(
-                  request,
-                  getBearerTokenFromRequest,
-                  O.match(
-                    () => authenticationByGrant(request, reply, done),
-                    (bearerToken) => authenticationByToken(request, reply, bearerToken, done)
-                  )
-                )
-            )
-          )
-      )
-    )()
-  })
-
-  const getLogoutUrl = (config: WellKnownConfiguration) => (idToken: string) =>
-    pipe(
-      Boolean(opts.usePostLogoutRedirect),
-      B.match(
-        () => `${config.end_session_endpoint}?redirect_uri=${opts.appOrigin}`,
-        () => `${config.end_session_endpoint}?id_token_hint=${idToken}&post_logout_redirect_uri=${opts.appOrigin}`
-      )
-    )
-
-  function logout(request: FastifyRequest, reply: FastifyReply) {
-    const idToken = request.session.grant.response?.id_token ?? ''
-
-    request.session.destroy((error) => {
+    function authenticationByGrant(request: FastifyRequest, reply: FastifyReply, done: HookHandlerDoneFunction) {
       pipe(
-        error,
+        authentication(request),
+        E.fold(
+          (e) => {
+            authenticationErrorHandler(e, request, reply, done)
+          },
+          (decodedJson) => {
+            request.session.user = userPayloadMapper(decodedJson as DefaultToken)
+            request.log.debug(`${JSON.stringify(request.session.user)}`)
+            done()
+          }
+        )
+      )
+    }
+
+    const unauthorizedHandler = pipe(
+      opts.unauthorizedHandler,
+      O.fromNullable,
+      O.match(
+        () => (_request: FastifyRequest, reply: FastifyReply) => {
+          reply.status(401).send(`Unauthorized`)
+        },
+        (a) => a
+      )
+    )
+
+    function authenticationByToken(
+      request: FastifyRequest,
+      reply: FastifyReply,
+      bearerToken: string,
+      done: HookHandlerDoneFunction
+    ) {
+      pipe(
+        bearerToken,
+        verifyJwtToken,
+        E.chain(decodedTokenToJson),
+        E.fold(
+          (e) => {
+            request.log.debug(`Keycloak adapter: ${e.message}`)
+            unauthorizedHandler(request, reply)
+            done()
+          },
+          (decodedJson) => {
+            request.session.user = userPayloadMapper(decodedJson as DefaultToken)
+            request.log.debug(`${JSON.stringify(request.session.user)}`)
+            done()
+          }
+        )
+      )
+    }
+
+    const matchers = pipe(
+      opts.excludedPatterns?.map((pattern) => wcMatch(pattern)),
+      O.fromNullable
+    )
+
+    const filterExcludedPattern: (request: FastifyRequest) => O.Option<FastifyRequest> = (request) =>
+      pipe(
+        matchers,
+        O.map((matchers) => matchers.filter((matcher) => matcher(request.url))),
+        O.map((matchers) => matchers.length > 0),
+        O.match(
+          () => O.of(request),
+          (b) =>
+            pipe(
+              b,
+              B.match(
+                () => O.of(request),
+                () => O.none
+              )
+            )
+        )
+      )
+
+    const bypassFn = (request: FastifyRequest): TO.TaskOption<FastifyRequest> =>
+      pipe(
+        TO.tryCatch(async () => await opts.bypassFn?.(request)),
+        TO.chain((result) => pipe(O.fromNullable(result === true ? null : request), TO.fromOption))
+      )
+
+    const filterGrantRoute: (request: FastifyRequest) => O.Option<FastifyRequest> = (request) =>
+      pipe(
+        request,
+        O.fromPredicate((request) => !isGrantRoute(request))
+      )
+
+    fastify.addHook('preValidation', (request: FastifyRequest, reply: FastifyReply, done) => {
+      pipe(
+        request,
+        bypassFn,
+        TO.match(
+          () => {
+            done()
+          },
+          (request) =>
+            pipe(
+              request,
+              filterGrantRoute,
+              O.chain(filterExcludedPattern),
+              O.match(
+                () => {
+                  done()
+                },
+                (request) =>
+                  pipe(
+                    request,
+                    getBearerTokenFromRequest,
+                    O.match(
+                      () => authenticationByGrant(request, reply, done),
+                      (bearerToken) => authenticationByToken(request, reply, bearerToken, done)
+                    )
+                  )
+              )
+            )
+        )
+      )()
+    })
+
+    const getLogoutUrl = (config: WellKnownConfiguration) => (idToken: string) =>
+      pipe(
+        Boolean(opts.usePostLogoutRedirect),
+        B.match(
+          () => `${config.end_session_endpoint}?redirect_uri=${opts.appOrigin}`,
+          () => `${config.end_session_endpoint}?id_token_hint=${idToken}&post_logout_redirect_uri=${opts.appOrigin}`
+        )
+      )
+
+    function logout(request: FastifyRequest, reply: FastifyReply) {
+      const idToken = request.session.grant.response?.id_token ?? ''
+
+      request.session.destroy((error) => {
+        pipe(
+          error,
+          O.fromNullable,
+          O.match(
+            () => {
+              pipe(
+                keycloakConfiguration,
+                E.map((config) => {
+                  reply.redirect(getLogoutUrl(config)(idToken))
+                })
+              )
+            },
+            (e) => {
+              request.log.error(`Failed to logout: ${e}`)
+              reply.status(500).send({ msg: `Internal Server Error: ${e}` })
+            }
+          )
+        )
+      })
+    }
+
+    const logoutEndpoint = opts.logoutEndpoint ?? '/logout'
+
+    fastify.get(logoutEndpoint, async (request, reply) => {
+      pipe(
+        request.session.user,
         O.fromNullable,
         O.match(
           () => {
-            pipe(
-              keycloakConfiguration,
-              E.map((config) => {
-                reply.redirect(getLogoutUrl(config)(idToken))
-              })
-            )
+            reply.redirect('/')
           },
-          (e) => {
-            request.log.error(`Failed to logout: ${e}`)
-            reply.status(500).send({ msg: `Internal Server Error: ${e}` })
+          () => {
+            logout(request, reply)
           }
         )
       )
     })
+
+    fastify.log.info(`Keycloak registered successfully!`)
+  },
+  {
+    fastify: '5.x',
+    name: 'fastify-keycloak-adapter'
   }
-
-  const logoutEndpoint = opts.logoutEndpoint ?? '/logout'
-
-  fastify.get(logoutEndpoint, async (request, reply) => {
-    pipe(
-      request.session.user,
-      O.fromNullable,
-      O.match(
-        () => {
-          reply.redirect('/')
-        },
-        () => {
-          logout(request, reply)
-        }
-      )
-    )
-  })
-
-  fastify.log.info(`Keycloak registered successfully!`)
-})
+)
