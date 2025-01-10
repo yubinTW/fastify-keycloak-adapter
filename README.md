@@ -19,7 +19,8 @@ yarn add fastify-keycloak-adapter
 
 ## Fastify Version
 
-- Fastify 4 -> `npm i fastify-keycloak-adapter`
+- Fastify 5 -> `npm i fastify-keycloak-adapter`
+- Fastify 4 -> `npm i fastify-keycloak-adapter@2.3.3`
 - Fastify 3 -> `npm i fastify-keycloak-adapter@0.6.3` (deprecated)
 
 ## Usage
