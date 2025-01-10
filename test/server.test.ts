@@ -178,7 +178,7 @@ describe('server with keycloak testing', () => {
     beforeAll(async () => {
       await serverStart(server, serverPort, {
         ...keycloakOptions,
-        bypassFn,
+        bypassFn
       })
       await server.ready()
     })
@@ -213,20 +213,20 @@ describe('server with keycloak testing', () => {
     })
   })
 
-
   describe('add async bypassFn configuration', () => {
     const server: FastifyInstance = serverOf()
 
-    const bypassFn = (request: FastifyRequest) => new Promise<boolean>((resolve) => {
-      setTimeout(() => {
-        resolve(request.headers.password === 'sesame')
-      }, 100)
-    })
+    const bypassFn = (request: FastifyRequest) =>
+      new Promise<boolean>((resolve) => {
+        setTimeout(() => {
+          resolve(request.headers.password === 'sesame')
+        }, 100)
+      })
 
     beforeAll(async () => {
       await serverStart(server, serverPort, {
         ...keycloakOptions,
-        bypassFn,
+        bypassFn
       })
       await server.ready()
     })
